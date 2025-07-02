@@ -1,0 +1,6 @@
+@api.validata.com_HostAddress = http://localhost:5282
+
+GET {{api.validata.com_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
