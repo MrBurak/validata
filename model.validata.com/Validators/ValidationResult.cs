@@ -4,11 +4,16 @@ using model.validata.com.Enumeration;
 
 namespace model.validata.com.Validators
 {
-    public class ValidationResult
+    public class ValidationResult<TEntity>
     {
+        public TEntity? Entity { get; set; }
         public bool IsValid => Errors.Count == 0;
-        public List<ValidationCode> Errors { get; } = new();
+        public List<string> Errors { get; } = new();
 
-        public void AddError(ValidationCode message) => Errors.Add(message);
+        public void AddError(string? message) 
+        {
+            if(string.IsNullOrWhiteSpace(message)) return;
+            Errors.Add(message);
+        }
     }
 }

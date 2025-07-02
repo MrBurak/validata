@@ -1,9 +1,10 @@
 ﻿using business.validata.com.Interfaces.Validators;
 using data.validata.com.Entities;
+using data.validata.com.Interfaces.Repository;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
 
-using util.validata.com;
+
 
 namespace business.validata.com.Validators
 {
@@ -11,42 +12,47 @@ namespace business.validata.com.Validators
     {
 
         private readonly IGenericValidation<Customer> genericValidation;
-        public CustomerValidation(IGenericValidation<Customer> genericValidation)
+        private readonly IDataRepository<Customer> repository;
+        public CustomerValidation(IGenericValidation<Customer> genericValidation, IDataRepository<Customer> repository)
         {
+            ArgumentNullException.ThrowIfNull(genericValidation);
+            ArgumentNullException.ThrowIfNull(repository);
             this.genericValidation = genericValidation;
+            this.repository = repository;
         }
 
 
-        public async Task<ValidationResult> SetAsync(Customer customer, BusinessSetOperation businessSetOperation)
+        public async Task<ValidationResult<Customer>> InvokeAsync(Customer customer, BusinessSetOperation businessSetOperation)
         {
-            var result = new ValidationResult();
-            var exists = await genericValidation.Exists(customer, businessSetOperation);
-            if (exists != null && exists.Entity == null) 
+            
+            if (businessSetOperation == BusinessSetOperation.Create) 
             {
-                result.AddError((ValidationCode)exists.Code!);
+                customer.CustomerId = 0;
+            }
+            var result = new ValidationResult<Customer>();
+            var exists = await genericValidation.Exists(customer, businessSetOperation);
+            if (exists != null) 
+            {
+                if (exists.Entity == null)
+                {
+                    result.AddError(exists.Code);
+                    return result;
+                }
+                result.Entity = exists.Entity;
             }
             
+            
+            result.AddError(await genericValidation.ValidateStringField(customer, nameof(Customer.FirstName), true, false));
+            result.AddError(await genericValidation.ValidateStringField(customer, nameof(Customer.LastName), true, false));
+            if (businessSetOperation.Equals(BusinessSetOperation.Create)) 
+            {
+                var ids = (await repository.GetListAsync(x => x.DeletedOn == null)).Select(x=> x.CustomerId).ToList();
 
-            if (StringUtil.IsEmpty(customer.FirstName))
-                result.AddError(ValidationCode.FirstIsRequired);
-
-            if (StringUtil.IsEmpty(customer.LastName))
-                result.AddError(ValidationCode.LastIsRequired);
-
-            if (StringUtil.IsEmpty(customer.Email))
-                result.AddError(ValidationCode.EmailAddressInvalid);
-            else if (! EmailUtil.IsValid(customer.Email))
-                result.AddError(ValidationCode.EmailAddressInvalid);
-
-            if (!StringUtil.IsEmpty(customer.Phone) && customer.Phone!.Length < 7)
-                result.AddError(ValidationCode.PhoneIsInvalid);
-
-            if (!StringUtil.IsEmpty(customer.Pobox) && customer.Pobox!.Length > 20)
-                result.AddError(ValidationCode.PoboxIsInvalid);
-
+                result.AddError(await genericValidation.ValidateStringField(customer, nameof(Customer.Email), true, true, ids ,@"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$"));
+            }
+            
+            result.AddError(await genericValidation.ValidateStringField(customer, nameof(Customer.Pobox), true, false));
             return result;
-        }
-
-        
+        }        
     }
 }

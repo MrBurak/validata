@@ -6,8 +6,10 @@ using data.validata.com.Interfaces.Metadata;
 using data.validata.com.Interfaces.Repository;
 using data.validata.com.Repositories;
 using Microsoft.EntityFrameworkCore;
-using business.validata.com.Interfaces;
 using business.validata.com.Utils;
+using business.validata.com.Interfaces.Utils;
+using business.validata.com.Interfaces;
+using business.validata.com;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,13 +29,12 @@ builder.Services.AddSingleton<IMetadata, Metadata>(serviceProvider => MetadataFa
 #endregion
 
 #region Business DI
-    #region Utils DI
-    builder.Services.AddTransient<IGenericLambdaExpressions, GenericLambdaExpressions>();
-    #endregion
-    #region Business Validation DI
-    builder.Services.AddTransient(typeof(IGenericValidation<>), typeof(GenericValidation<>));
-    builder.Services.AddTransient<ICustomerValidation, CustomerValidation>();
-    #endregion
+builder.Services.AddTransient<IGenericLambdaExpressions, GenericLambdaExpressions>();
+builder.Services.AddTransient(typeof(IGenericValidation<>), typeof(GenericValidation<>));
+builder.Services.AddTransient(typeof(IStringFieldValidation<>), typeof(StringFieldValidation<>));
+
+builder.Services.AddTransient<ICustomerValidation, CustomerValidation>();
+builder.Services.AddTransient<ICustomerBusiness, CustomerBusiness>();
 #endregion
 
 

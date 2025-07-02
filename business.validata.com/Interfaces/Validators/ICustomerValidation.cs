@@ -7,6 +7,6 @@ namespace business.validata.com.Interfaces.Validators
 {
     public interface ICustomerValidation
     {
-        Task<ValidationResult> SetAsync(Customer customer, BusinessSetOperation businessSetOperation);
+        Task<ValidationResult<Customer>> InvokeAsync(Customer customer, BusinessSetOperation businessSetOperation);
     }
 }
