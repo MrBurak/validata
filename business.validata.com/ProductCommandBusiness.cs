@@ -5,18 +5,19 @@ using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using model.validata.com;
 using model.validata.com.Enumeration;
+using model.validata.com.Product;
 using util.validata.com;
 
 namespace business.validata.com
 {
-    public class CustomerBusiness : AbstractBusiness<Customer>, ICustomerBusiness
+    public class ProductCommandBusiness : AbstractCommandBusiness<Product>, IProductCommandBusiness
     {
         
-        private readonly ICustomerValidation validation;
-        public CustomerBusiness(
-            ICustomerValidation validation,
-            IDataRepository<Customer> repository,
-            IGenericValidation<Customer> genericValidation,
+        private readonly IProductValidation validation;
+        public ProductCommandBusiness(
+            IProductValidation validation,
+            ICommandRepository<Product> repository,
+            IGenericValidation<Product> genericValidation,
             IGenericLambdaExpressions genericLambdaExpressions) :
             base(genericValidation, repository, genericLambdaExpressions)
         {
@@ -24,10 +25,10 @@ namespace business.validata.com
             this.validation = validation;
         }
 
-        public async Task<ApiResult<Customer>> InvokeAsync(Customer customer, BusinessSetOperation businessSetOperation) 
+        public async Task<CommandResult<ProductModel>> InvokeAsync(Product Product, BusinessSetOperation businessSetOperation) 
         {
-            ApiResult<Customer> apiResult = new ApiResult<Customer>();
-            var validate = await validation.InvokeAsync(customer, businessSetOperation);
+            CommandResult<ProductModel> apiResult = new CommandResult<ProductModel>();
+            var validate = await validation.InvokeAsync(Product, businessSetOperation);
             if (!validate.IsValid) 
             {
                 apiResult.Validations=validate.Errors;
@@ -35,19 +36,18 @@ namespace business.validata.com
             }
             try
             {
-                List<Action<Customer>> properties = new()
+                List<Action<Product>> properties = new()
                 {
                     x=>
                     {
                         x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
                         x.OperationSourceId = (int) BusinessOperationSource.Api;
-                        x.FirstName=customer.FirstName;
-                        x.LastName=customer.LastName;
-                        x.Pobox=customer.Pobox;
-                        x.Address=customer.Address;
+                        x.Name=Product.Name;
+                        x.Price=Product.Price;
                     }
                 };
-                apiResult.Result = await BaseInvokeAsync(validate.Entity!, customer, businessSetOperation, properties);
+                var result= await BaseInvokeAsync(validate.Entity!, Product, businessSetOperation, properties);
+                apiResult.Result = ObjectUtil.ConvertObj<ProductModel, Product>(result!);
                 apiResult.Success = true;
 
             }

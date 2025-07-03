@@ -11,14 +11,14 @@ namespace business.validata.com.Utils
     {
         
 
-        private readonly IDataRepository<TEntity> repository;
+        private readonly ICommandRepository<TEntity> repository;
         
         private readonly IGenericLambdaExpressions genericLambdaExpressions;
         
        
 
         public StringFieldValidation(
-            IDataRepository<TEntity> repository, 
+            ICommandRepository<TEntity> repository, 
             IGenericLambdaExpressions genericLambdaExpressions)
         {
             ArgumentNullException.ThrowIfNull(repository);

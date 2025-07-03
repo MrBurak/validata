@@ -1,6 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace customer.validata.com.Models
+namespace model.validata.com.Customer
 {
     public class CustomerBaseModel
     {

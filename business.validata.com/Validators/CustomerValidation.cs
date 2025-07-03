@@ -12,8 +12,8 @@ namespace business.validata.com.Validators
     {
 
         private readonly IGenericValidation<Customer> genericValidation;
-        private readonly IDataRepository<Customer> repository;
-        public CustomerValidation(IGenericValidation<Customer> genericValidation, IDataRepository<Customer> repository)
+        private readonly ICommandRepository<Customer> repository;
+        public CustomerValidation(IGenericValidation<Customer> genericValidation, ICommandRepository<Customer> repository)
         {
             ArgumentNullException.ThrowIfNull(genericValidation);
             ArgumentNullException.ThrowIfNull(repository);

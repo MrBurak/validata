@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using Newtonsoft.Json;
+using System.ComponentModel.DataAnnotations;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
 using System.Reflection;
@@ -105,8 +106,18 @@ namespace util.validata.com
             return type.GetEnumValues().Cast<T>()
                 .Single(x => x.ToString() == enumMember);
         }
+        public static T Copy<T>(T obj)
+        {
+            var json = JsonConvert.SerializeObject(obj);
+            return JsonConvert.DeserializeObject<T>(json)!;
+        }
 
-       
-        
+        public static T ConvertObj<T,D>(D obj)
+        {
+            var json = JsonConvert.SerializeObject(obj);
+            return JsonConvert.DeserializeObject<T>(json)!;
+        }
+
+
     }
 }

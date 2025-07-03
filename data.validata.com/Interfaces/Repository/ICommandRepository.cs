@@ -3,7 +3,7 @@
 
 namespace data.validata.com.Interfaces.Repository
 {
-    public interface IDataRepository<T>
+    public interface ICommandRepository<T>
         where T : class
     {
       

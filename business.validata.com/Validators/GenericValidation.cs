@@ -10,12 +10,12 @@ namespace business.validata.com.Validators
 {
     public class GenericValidation<TEntity> : IGenericValidation<TEntity> where TEntity : class
     {
-        private readonly IDataRepository<TEntity> repository;
+        private readonly ICommandRepository<TEntity> repository;
         private readonly IGenericLambdaExpressions lambdaExpressions;
         private readonly IStringFieldValidation<TEntity> stringFieldValidation;
         public GenericValidation
         (
-            IDataRepository<TEntity> repository, 
+            ICommandRepository<TEntity> repository, 
             IGenericLambdaExpressions lambdaExpressions,
             IStringFieldValidation<TEntity> stringFieldValidation
         )

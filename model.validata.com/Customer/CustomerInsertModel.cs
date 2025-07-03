@@ -1,10 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
 
-namespace customer.validata.com.Models
+namespace model.validata.com.Customer
 {
-    public class CustomerViewModel : CustomerBaseModel
+    public class CustomerInsertModel : CustomerBaseModel
     {
-        public int CustomerId { get; set; }
         [Required]
         [MaxLength(128)]
         public string? Email { get; set; }

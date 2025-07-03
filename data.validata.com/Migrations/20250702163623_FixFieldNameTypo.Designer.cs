@@ -11,7 +11,7 @@ using data.validata.com.Context;
 
 namespace data.validata.com.Migrations
 {
-    [DbContext(typeof(ValidataDbContext))]
+    [DbContext(typeof(CommandContext))]
     [Migration("20250702163623_FixFieldNameTypo")]
     partial class FixFieldNameTypo
     {

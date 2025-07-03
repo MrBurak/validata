@@ -6,7 +6,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace data.validata.com.Entities
 {
-    [Table(nameof(Order), Schema = ValidataDbContext.DefaultSchema)]
+    [Table(nameof(Order), Schema = CommandContext.DefaultSchema)]
     public class Order : BaseEntity
     {
         [Key]

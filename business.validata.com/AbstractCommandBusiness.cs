@@ -10,12 +10,12 @@ using util.validata.com;
 
 namespace business.validata.com
 {
-    public abstract class AbstractBusiness<TEntity> : IAbstractBusiness<TEntity> where TEntity : BaseEntity, new()
+    public abstract class AbstractCommandBusiness<TEntity> : IAbstractCommandBusiness<TEntity> where TEntity : BaseEntity, new()
     {   
         private readonly IGenericLambdaExpressions genericLambdaExpressions;
         private readonly IGenericValidation<TEntity> genericValidation;
-        private readonly IDataRepository<TEntity> repository;
-        public AbstractBusiness(IGenericValidation<TEntity> genericValidation, IDataRepository<TEntity> repository, IGenericLambdaExpressions genericLambdaExpressions)
+        private readonly ICommandRepository<TEntity> repository;
+        public AbstractCommandBusiness(IGenericValidation<TEntity> genericValidation, ICommandRepository<TEntity> repository, IGenericLambdaExpressions genericLambdaExpressions)
         {
             ArgumentNullException.ThrowIfNull(genericValidation);
             ArgumentNullException.ThrowIfNull(repository); 
@@ -43,9 +43,9 @@ namespace business.validata.com
             }
             return await repository.GetEntityAsync(query);
         }
-        public async Task<ApiResult<TEntity>> DeleteAsync(int id) 
+        public async Task<CommandResult<TEntity>> DeleteAsync(int id) 
         {
-            ApiResult<TEntity> apiResult = new ApiResult<TEntity>();
+            CommandResult<TEntity> apiResult = new CommandResult<TEntity>();
             var exist = await genericValidation.Exists(id, BusinessSetOperation.Delete);
             if (exist!=null && exist.Code!=null) 
             {

@@ -5,7 +5,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace data.validata.com.Entities
 {
-    [Table(nameof(OrderItem), Schema = ValidataDbContext.DefaultSchema)]
+    [Table(nameof(OrderItem), Schema = CommandContext.DefaultSchema)]
     public class OrderItem : BaseEntity
     {
         [Key]
@@ -14,6 +14,12 @@ namespace data.validata.com.Entities
         [Required]
         public int Quantity { get; set; }
         
+        [Required]
+        public float ProductPrice { get; set; }
+
+        [Required]
+        public float TotalPrice { get { return Quantity * ProductPrice; } }
+
         [Required]
         public int ProductId { get; set; }
         public virtual Product Product { get; set; } = null!;

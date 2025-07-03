@@ -23,8 +23,13 @@ builder.Services.AddSwaggerGen();
 
 
 #region Database DI
-builder.Services.AddDbContext<ValidataDbContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("validataconnectionstring")));
-builder.Services.AddTransient(typeof(IDataRepository<>), typeof(SqlRepository<>));
+builder.Services.AddDbContext<CommandContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("validataconnectionstring")));
+builder.Services.AddSingleton<QueryContext>();
+builder.Services.AddTransient(typeof(ICommandRepository<>), typeof(CommandRepository<>));
+builder.Services.AddTransient(typeof(ICustomerRepository), typeof(CustomerRepository));
+builder.Services.AddTransient(typeof(IProductRepository), typeof(ProductRepository));
+builder.Services.AddTransient(typeof(IOrderRepository), typeof(OrderRepository));
+builder.Services.AddTransient(typeof(IOrderItemRepository), typeof(OrderItemRepository));
 builder.Services.AddSingleton<IMetadata, Metadata>(serviceProvider => MetadataFactory.Create());
 #endregion
 
@@ -34,7 +39,11 @@ builder.Services.AddTransient(typeof(IGenericValidation<>), typeof(GenericValida
 builder.Services.AddTransient(typeof(IStringFieldValidation<>), typeof(StringFieldValidation<>));
 
 builder.Services.AddTransient<ICustomerValidation, CustomerValidation>();
-builder.Services.AddTransient<ICustomerBusiness, CustomerBusiness>();
+builder.Services.AddTransient<ICustomerCommandBusiness, CustomerCommandBusiness>();
+builder.Services.AddTransient<ICustomerQueryBusiness, CustomerQueryBusiness>();
+builder.Services.AddTransient<IProductValidation, ProductValidation>();
+builder.Services.AddTransient<IProductCommandBusiness, ProductCommandBusiness>();
+builder.Services.AddTransient<IProductQueryBusiness, ProductQueryBusiness>();
 #endregion
 
 

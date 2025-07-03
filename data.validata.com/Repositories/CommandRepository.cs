@@ -9,15 +9,16 @@ using util.validata.com;
 namespace data.validata.com.Repositories
 {
     [ExcludeFromCodeCoverage]
-    public class SqlRepository<T> : IDataRepository<T>
+    public class CommandRepository<T> : ICommandRepository<T>
         where T : class, new()
     {
-        private readonly SemaphoreSlim semaphoreSlim = new SemaphoreSlim(1, 1);
 
-       
-        private ValidataDbContext validataDbContext;
+        
 
-        public SqlRepository(ValidataDbContext validataDbContext)
+
+        private CommandContext validataDbContext;
+
+        public CommandRepository(CommandContext validataDbContext)
         {
             this.validataDbContext = validataDbContext;
         }

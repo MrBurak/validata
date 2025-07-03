@@ -1,0 +1,11 @@
+﻿using data.validata.com.Entities;
+using model.validata.com;
+using model.validata.com.Enumeration;
+using model.validata.com.Product;
+namespace business.validata.com.Interfaces
+{
+    public interface IProductCommandBusiness : IAbstractCommandBusiness<Product>
+    {
+        Task<CommandResult<ProductModel>> InvokeAsync(Product Product, BusinessSetOperation businessSetOperation);
+    }
+}

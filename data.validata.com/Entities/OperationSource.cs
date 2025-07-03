@@ -4,7 +4,7 @@ using data.validata.com.Context;
 
 namespace data.validata.com.Entities
 {
-    [Table(nameof(OperationSource), Schema = ValidataDbContext.DefaultSchema)]
+    [Table(nameof(OperationSource), Schema = CommandContext.DefaultSchema)]
     public class OperationSource
     {
         [Key]

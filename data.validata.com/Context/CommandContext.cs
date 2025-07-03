@@ -8,11 +8,11 @@ using System.Diagnostics.CodeAnalysis;
 namespace data.validata.com.Context
 {
     [ExcludeFromCodeCoverage]
-    public partial class ValidataDbContext : DbContext
+    public partial class CommandContext : DbContext
     {
-        public const string DefaultSchema = "Validata";
+        public const string DefaultSchema = DbConsts.DefaultSchema;
 
-        public ValidataDbContext(DbContextOptions<ValidataDbContext> options) : base(options) { }
+        public CommandContext(DbContextOptions<CommandContext> options) : base(options) { }
 
         public virtual DbSet<OperationSource>? OperationSource { get; set; }
         public virtual DbSet<Customer> Customer { get; set; } = null!;
