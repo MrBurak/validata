@@ -10,6 +10,7 @@ namespace model.validata.com.Enumeration
     {
         Create,
         Update,
-        Delete
+        Delete,
+        Get
     }
 }

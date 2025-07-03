@@ -19,7 +19,7 @@ namespace data.validata.com.Repositories
 
         public async Task<Order?> GetByIdAsync(int orderId, int customerId)
         {
-            var sql = $"SELECT * FROM {defaultSchema}.Order WHERE DeletedOn is null and OrderId = @OrderId and CustomerId = @CustomerId order by OrderDate desc";
+            var sql = $"SELECT * FROM {defaultSchema}.[Order] WHERE DeletedOn is null and OrderId = @OrderId and CustomerId = @CustomerId order by OrderDate desc";
             using (var connection = this.context.CreateConnection())
             {
                 return await connection.QueryFirstOrDefaultAsync<Order>(sql, new { OrderId = orderId, Customer=customerId });
@@ -28,7 +28,7 @@ namespace data.validata.com.Repositories
 
         public async Task<IEnumerable<Order>> GetAllAsync(int customerId)
         {
-            var sql = $"SELECT * FROM {defaultSchema}.Order WHERE DeletedOn is null and CustomerId = @CustomerId";
+            var sql = $"SELECT * FROM {defaultSchema}.[Order] WHERE DeletedOn is null and CustomerId = @CustomerId";
             using (var connection = this.context.CreateConnection())
             {
                 return await connection.QueryAsync<Order>(sql, new { CustomerId = customerId });

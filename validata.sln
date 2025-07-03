@@ -15,6 +15,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "util.validata.com", "util.v
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "model.validata.com", "model.validata.com\model.validata.com.csproj", "{CA22DE45-5196-4AD2-B773-ADF678F3BFAD}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{C5C1312B-A902-4009-BCFF-963733CF7D90}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "util.validata.test", "util.validata.test\util.validata.test.csproj", "{E92BE14A-F40A-4B56-99F9-E4CB42465399}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -41,6 +45,10 @@ Global
 		{CA22DE45-5196-4AD2-B773-ADF678F3BFAD}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{CA22DE45-5196-4AD2-B773-ADF678F3BFAD}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{CA22DE45-5196-4AD2-B773-ADF678F3BFAD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E92BE14A-F40A-4B56-99F9-E4CB42465399}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E92BE14A-F40A-4B56-99F9-E4CB42465399}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E92BE14A-F40A-4B56-99F9-E4CB42465399}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E92BE14A-F40A-4B56-99F9-E4CB42465399}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -50,6 +58,7 @@ Global
 		{1B5F5C66-D608-4533-9A03-E313933D2DB1} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{03B19C80-983E-4F39-BD8B-6242BFE2335A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{CA22DE45-5196-4AD2-B773-ADF678F3BFAD} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{E92BE14A-F40A-4B56-99F9-E4CB42465399} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {015AE390-1300-4695-A6ED-C19CFDB00596}

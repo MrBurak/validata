@@ -44,6 +44,7 @@ builder.Services.AddTransient<ICustomerQueryBusiness, CustomerQueryBusiness>();
 builder.Services.AddTransient<IProductValidation, ProductValidation>();
 builder.Services.AddTransient<IProductCommandBusiness, ProductCommandBusiness>();
 builder.Services.AddTransient<IProductQueryBusiness, ProductQueryBusiness>();
+builder.Services.AddTransient<IOrderQueryBusiness, OrderQueryBusiness>();
 #endregion
 
 

@@ -1,10 +1,8 @@
 ﻿using System.ComponentModel.DataAnnotations;
-using System.Diagnostics.CodeAnalysis;
 using System.Reflection;
 
 namespace util.validata.com
 {
-    [ExcludeFromCodeCoverage]
     public static class EnumUtil
     {
         public static string? GetDisplayName(this Enum enumValue)

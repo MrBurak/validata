@@ -29,14 +29,14 @@ namespace business.validata.com.Validators
         }
         public async Task<ExistsResult<TEntity>?> Exists(TEntity entity, BusinessSetOperation businessSetOperation)
         {
-            if(businessSetOperation!=BusinessSetOperation.Update && businessSetOperation != BusinessSetOperation.Delete) return null;
+            if(businessSetOperation!=BusinessSetOperation.Update && businessSetOperation != BusinessSetOperation.Delete && businessSetOperation != BusinessSetOperation.Get) return null;
             var exists = await this.repository.GetEntityAsync(lambdaExpressions.GetEntityByPrimaryKey(entity));
             return new ExistsResult<TEntity> { Entity = exists };
         }
 
         public async Task<ExistsResult<TEntity>?> Exists(int id, BusinessSetOperation businessSetOperation)
         {
-            if (businessSetOperation != BusinessSetOperation.Update && businessSetOperation != BusinessSetOperation.Delete) return null;
+            if (businessSetOperation != BusinessSetOperation.Update && businessSetOperation != BusinessSetOperation.Delete && businessSetOperation != BusinessSetOperation.Get) return null;
             var exists = await this.repository.GetEntityAsync(lambdaExpressions.GetEntityById<TEntity>(id));
             return new ExistsResult<TEntity> { Entity = exists };
         }

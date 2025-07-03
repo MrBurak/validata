@@ -24,26 +24,8 @@ namespace business.validata.com
             this.repository = repository;
             this.genericLambdaExpressions = genericLambdaExpressions;
         }
-        public async Task<IEnumerable<TEntity>> GetListAsync(Expression<Func<TEntity, bool>>? expression = null)
-        {
-            Expression<Func<TEntity, bool>> query = x => x.DeletedOn == null;
-            if (expression != null) 
-            {
-                query=ObjectUtil.ConcatLambdaExpression(query, expression); 
-            }
-
-            return await repository.GetListAsync(query);
-        }
-        public async Task<TEntity?> GetEntityAsync(int id, Expression<Func<TEntity, bool>>? expression = null)
-        {
-            Expression<Func<TEntity, bool>> query = genericLambdaExpressions.GetEntityById<TEntity>(id);
-            if (expression != null)
-            {
-                query = ObjectUtil.ConcatLambdaExpression(query, expression);
-            }
-            return await repository.GetEntityAsync(query);
-        }
-        public async Task<CommandResult<TEntity>> DeleteAsync(int id) 
+      
+        public virtual async Task<CommandResult<TEntity>> DeleteAsync(int id) 
         {
             CommandResult<TEntity> apiResult = new CommandResult<TEntity>();
             var exist = await genericValidation.Exists(id, BusinessSetOperation.Delete);

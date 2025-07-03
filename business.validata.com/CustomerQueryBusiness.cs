@@ -47,7 +47,7 @@ namespace business.validata.com
                     return queryResult;
                 }
                 queryResult.Result = ObjectUtil.ConvertObj<CustomerViewModel, Customer>(customer);
-                queryResult.Success = false;
+                queryResult.Success = true;
             }
             catch (Exception ex)
             {

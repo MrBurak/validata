@@ -62,15 +62,15 @@ namespace api.validata.com.Controllers
         }
 
         [HttpDelete]
-        public async Task<CommandResult<Customer>> Delete(int id)
+        public async Task<CommandResult<Customer>> Delete(int customerId)
         {
-            return await commandBusiness.DeleteAsync(id);
+            return await commandBusiness.DeleteAsync(customerId);
         }
 
-        [HttpGet("{id}")]
-        public async Task<QueryResult<CustomerViewModel?>> Get(int id)
+        [HttpGet("{customerId}")]
+        public async Task<QueryResult<CustomerViewModel?>> Get(int customerId)
         {
-            return await queryBusiness.GetAsync(id);
+            return await queryBusiness.GetAsync(customerId);
         }
     }
 }
