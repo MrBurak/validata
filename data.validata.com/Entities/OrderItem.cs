@@ -18,9 +18,6 @@ namespace data.validata.com.Entities
         public float ProductPrice { get; set; }
 
         [Required]
-        public float TotalPrice { get { return Quantity * ProductPrice; } }
-
-        [Required]
         public int ProductId { get; set; }
         public virtual Product Product { get; set; } = null!;
 

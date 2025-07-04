@@ -14,15 +14,19 @@ namespace business.validata.com
     {
         
         private readonly ICustomerValidation validation;
+        private readonly IOrderCommandBusiness orderCommandBusiness;
         public CustomerCommandBusiness(
             ICustomerValidation validation,
             ICommandRepository<Customer> repository,
             IGenericValidation<Customer> genericValidation,
-            IGenericLambdaExpressions genericLambdaExpressions) :
+            IGenericLambdaExpressions genericLambdaExpressions,
+            IOrderCommandBusiness orderCommandBusiness) :
             base(genericValidation, repository, genericLambdaExpressions)
         {
             ArgumentNullException.ThrowIfNull(validation);
+            ArgumentNullException.ThrowIfNull(orderCommandBusiness);
             this.validation = validation;
+            this.orderCommandBusiness = orderCommandBusiness;
         }
 
         public async Task<CommandResult<CustomerViewModel>> InvokeAsync(Customer customer, BusinessSetOperation businessSetOperation) 
@@ -48,7 +52,7 @@ namespace business.validata.com
                         x.Address=customer.Address;
                     }
                 };
-                var result= await BaseInvokeAsync(validate.Entity!, customer, businessSetOperation, properties);
+                var result= await InvokeAsync(validate.Entity!, customer, businessSetOperation, properties);
                 apiResult.Result = ObjectUtil.ConvertObj<CustomerViewModel, Customer>(result!);
                 apiResult.Success = true;
 
@@ -59,7 +63,13 @@ namespace business.validata.com
                 apiResult.Success = false;
             }
             return apiResult;
-        }            
-            
         }
+        public override async Task<CommandResult<Customer>> DeleteAsync(int id)
+        {
+            var result= await base.DeleteAsync(id);
+            await orderCommandBusiness.DeleteAllAsync(id);
+            return result;
+        }
+
     }
+}

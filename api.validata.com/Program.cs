@@ -10,6 +10,7 @@ using business.validata.com.Utils;
 using business.validata.com.Interfaces.Utils;
 using business.validata.com.Interfaces;
 using business.validata.com;
+using business.validata.com.Adaptors;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -44,7 +45,12 @@ builder.Services.AddTransient<ICustomerQueryBusiness, CustomerQueryBusiness>();
 builder.Services.AddTransient<IProductValidation, ProductValidation>();
 builder.Services.AddTransient<IProductCommandBusiness, ProductCommandBusiness>();
 builder.Services.AddTransient<IProductQueryBusiness, ProductQueryBusiness>();
+builder.Services.AddTransient<IOrderValidation, OrderValidation>();
 builder.Services.AddTransient<IOrderQueryBusiness, OrderQueryBusiness>();
+builder.Services.AddTransient<IOrderCommandBusiness, OrderCommandBusiness>();
+builder.Services.AddTransient<IOrderAdaptor, OrderAdaptor>();
+builder.Services.AddTransient<IOrderItemCommandBusiness, OrderItemCommandBusiness>();
+
 #endregion
 
 

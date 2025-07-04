@@ -8,5 +8,6 @@ namespace data.validata.com.Interfaces.Repository
         Task<Product?> GetByIdAsync(int ProductId);
 
         Task<IEnumerable<Product>> GetAllAsync();
+        Task<IEnumerable<Product>> GetAllWithDeletedAsync();
     }
 }

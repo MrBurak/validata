@@ -1,6 +1,7 @@
 ﻿using data.validata.com.Context;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using util.validata.com;
 
 
 
@@ -12,8 +13,15 @@ namespace data.validata.com.Entities
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int OrderId { get; set; }
+
         [Required]
-        public DateTime OrderDate { get; set; }
+        public DateTime OrderDate { get; set; } = DateTimeUtil.SystemTime;
+        
+        [Required]
+        public float TotalAmount { get; set; }
+
+        [Required]
+        public int ProductCount { get; set; }
 
         [Required]
         public int CustomerId { get; set; }

@@ -46,7 +46,7 @@ namespace business.validata.com
                         x.Price=Product.Price;
                     }
                 };
-                var result= await BaseInvokeAsync(validate.Entity!, Product, businessSetOperation, properties);
+                var result= await InvokeAsync(validate.Entity!, Product, businessSetOperation, properties);
                 apiResult.Result = ObjectUtil.ConvertObj<ProductModel, Product>(result!);
                 apiResult.Success = true;
 

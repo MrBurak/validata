@@ -19,26 +19,25 @@ namespace api.validata.com.Controllers
 
         private readonly ILogger<OrderController> logger;
 
-        //private readonly IOrderCommandBusiness commandBusiness;
+        private readonly IOrderCommandBusiness commandBusiness;
         private readonly IOrderQueryBusiness queryBusiness;
-        //private readonly IMapper mapper;
-        //private readonly MapperConfiguration mapperConfiguration;
-        public OrderController(ILogger<OrderController> logger, IOrderQueryBusiness queryBusiness)//, IOrderCommandBusiness commandBusiness)
+        private readonly IMapper mapper;
+        private readonly MapperConfiguration mapperConfiguration;
+        public OrderController(ILogger<OrderController> logger, IOrderQueryBusiness queryBusiness, IOrderCommandBusiness commandBusiness)
         {
             ArgumentNullException.ThrowIfNull(logger);
-            //ArgumentNullException.ThrowIfNull(commandBusiness);
+            ArgumentNullException.ThrowIfNull(commandBusiness);
             ArgumentNullException.ThrowIfNull(queryBusiness);
             this.logger = logger;
-            //this.commandBusiness = commandBusiness;
-            this.queryBusiness = queryBusiness;   
+            this.commandBusiness = commandBusiness;
+            this.queryBusiness = queryBusiness;
 
-            //mapperConfiguration= new MapperConfiguration(mapperConfigurationExpression =>
-            //{
-            //    mapperConfigurationExpression.CreateMap<OrderBaseModel, Order>();
-            //    mapperConfigurationExpression.CreateMap<OrderModel, Order>();
+            mapperConfiguration = new MapperConfiguration(mapperConfigurationExpression =>
+            {
+                mapperConfigurationExpression.CreateMap<OrderInsertModel, OrderUpdateModel>();
 
-            //});
-            //mapper = mapperConfiguration.CreateMapper();
+            });
+            mapper = mapperConfiguration.CreateMapper();
         }
 
         [HttpGet("{customerid}")]
@@ -47,27 +46,26 @@ namespace api.validata.com.Controllers
             return await queryBusiness.ListAsync(customerid);
         }
 
-        //[HttpPost]
-        //public async Task<CommandResult<OrderModel>> Insert(OrderBaseModel request)
-        //{
-        //    var Order = mapper.Map<Order>(request);
+        [HttpPost]
+        public async Task<CommandResult<OrderDetailViewModel>> Insert(OrderInsertModel request)
+        {
+            var order = mapper.Map<OrderUpdateModel>(request);
 
-        //    return await commandBusiness.InvokeAsync(Order, BusinessSetOperation.Create);
+            return await commandBusiness.InvokeAsync(order, BusinessSetOperation.Create);
 
-        //}
+        }
 
-        //[HttpPut]
-        //public async Task<CommandResult<OrderModel>> Update(OrderModel request)
-        //{
-        //    var Order = mapper.Map<Order>(request);
-        //    return await commandBusiness.InvokeAsync(Order, BusinessSetOperation.Update);
-        //}
+        [HttpPut]
+        public async Task<CommandResult<OrderDetailViewModel>> Update(OrderUpdateModel request)
+        {
+            return await commandBusiness.InvokeAsync(request, BusinessSetOperation.Update);
+        }
 
-        //[HttpDelete]
-        //public async Task<CommandResult<Order>> Delete(int id)
-        //{
-        //    return await commandBusiness.DeleteAsync(id);
-        //}
+        [HttpDelete]
+        public async Task<CommandResult<Order>> Delete(int id)
+        {
+            return await commandBusiness.DeleteAsync(id);
+        }
 
         [HttpGet("{orderId}/{customerId}")]
         public async Task<QueryResult<OrderDetailViewModel?>> Get(int orderId, int customerId)

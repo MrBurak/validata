@@ -24,7 +24,31 @@ namespace business.validata.com
             this.repository = repository;
             this.genericLambdaExpressions = genericLambdaExpressions;
         }
-      
+
+        public virtual async Task<CommandResult<List<TEntity>>> DeleteAllAsync(Expression<Func<TEntity, bool>> expression) 
+        {
+            CommandResult<List<TEntity>> commandResult = new();
+            List<Action<TEntity>> properties = new()
+            {
+                x=> {
+                    x.DeletedOn = DateTimeUtil.SystemTime;
+                    x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
+                    x.OperationSourceId = (int) BusinessOperationSource.Api;
+                }
+            };
+            try
+            {
+                await repository.UpdateAsync(expression, properties);
+                commandResult.Success = true;
+            }
+            catch (Exception ex)
+            {
+                commandResult.Exception = ex.Message;
+                commandResult.Success = false;
+            }
+            return commandResult;
+        }
+
         public virtual async Task<CommandResult<TEntity>> DeleteAsync(int id) 
         {
             CommandResult<TEntity> apiResult = new CommandResult<TEntity>();
@@ -56,7 +80,7 @@ namespace business.validata.com
               
         }
 
-        public async Task<TEntity?> BaseInvokeAsync(TEntity entity, TEntity request, BusinessSetOperation businessSetOperation, List<Action<TEntity>> properties)
+        public async Task<TEntity?> InvokeAsync(TEntity entity, TEntity request, BusinessSetOperation businessSetOperation, List<Action<TEntity>> properties)
         {
             
             try

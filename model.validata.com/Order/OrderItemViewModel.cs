@@ -13,7 +13,7 @@ namespace model.validata.com.Order
 
         public float ProductPrice { get; set; }
 
-        public float TotalPrice { get { return Quantity * ProductPrice; } }
+        public float TotalAmount { get { return Quantity * ProductPrice; } }
 
         public string? ProductName { get; set; }
 

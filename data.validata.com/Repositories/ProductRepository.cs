@@ -35,7 +35,14 @@ namespace data.validata.com.Repositories
             }
         }
 
+        public async Task<IEnumerable<Product>> GetAllWithDeletedAsync()
+        {
+            var sql = $"SELECT * FROM {defaultSchema}.Product";
 
-
+            using (var connection = this.context.CreateConnection())
+            {
+                return await connection.QueryAsync<Product>(sql);
+            }
+        }
     }
 }

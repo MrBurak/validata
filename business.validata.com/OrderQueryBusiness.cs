@@ -40,16 +40,12 @@ namespace business.validata.com
 
             if (customerExists != null && customerExists.Entity == null) 
             {
-                queryResult.Exception= customerExists.Code;
+                queryResult.Exception= "Customer Not Found";
                 return queryResult;
             }
             try
             {
                 var orders= ObjectUtil.ConvertObj<IEnumerable<OrderViewModel>, IEnumerable<Order>>(await repository.GetAllAsync(customerId)).ToList();
-
-                var orderItems=(await repositoryItem.GetAllAsync(customerId)).Where(x=> orders.Select(x=> x.OrderId).Contains(x.OrderId));
-
-                orders.ForEach(r => r.TotalPrice = orderItems.Where(i => i.OrderId == r.OrderId).Sum(i => i.ProductPrice * i.Quantity));
 
                 if (orders.Any())
                 {
@@ -81,8 +77,8 @@ namespace business.validata.com
                 var orderModel= ObjectUtil.ConvertObj<OrderDetailViewModel, Order>(order);
                 
                 var orderItems = (await repositoryItem.GetAllAsync(customerId)).Where(x => x.OrderId==orderId);
-                var products = (await repositoryProduct.GetAllAsync()).Where(x => orderItems.Select(o=> o.ProductId).Contains(x.ProductId));
-                orderModel.TotalPrice = orderItems.Sum(x => x.Quantity * x.ProductPrice);
+                var products = (await repositoryProduct.GetAllWithDeletedAsync()).Where(x => orderItems.Select(o=> o.ProductId).Contains(x.ProductId));
+             
                 orderModel.Items = orderItems.Select(x=> new OrderItemViewModel 
                 { 
                     ProductPrice = x.ProductPrice,  
