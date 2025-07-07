@@ -3,7 +3,7 @@
 
 namespace util.validata.com
 {
-    [ExcludeFromCodeCoverage]
+  
     public class DateTimeUtil
     {
         public static DateTime SystemTime { get { return DateTime.UtcNow; } }

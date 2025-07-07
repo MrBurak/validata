@@ -25,26 +25,44 @@ namespace business.validata.com.Validators
             var orderValidationResult = new OrderValidationResult();
 
             var orderExists = await genericValidationOrder.Exists(order.OrderId, businessSetOperation);
-            if (orderExists != null && orderExists.Entity == null)
+            if (orderExists != null)
             {
-                orderValidationResult.ValidationResult.AddError(orderExists.Code);
+                if (orderExists.Entity == null)
+                {
+                    orderValidationResult.ValidationResult.AddError(orderExists.Code);
+                    return orderValidationResult;
+                }
+                orderValidationResult.ValidationResult.Entity = orderExists.Entity;
+
+            }
+            else 
+            {
                 return orderValidationResult;
             }
 
-            var customerExists = await genericValidationCustomer.Exists(order.CustomerId, BusinessSetOperation.Get);
+                var customerExists = await genericValidationCustomer.Exists(order.CustomerId, BusinessSetOperation.Get);
             if (customerExists != null && customerExists.Entity == null)
             {
                 orderValidationResult.ValidationResult.AddError("Customer Not Found");
                 return orderValidationResult;
             }
+            else 
+            {
+                if (orderExists.Entity!.CustomerId != customerExists!.Entity!.CustomerId) 
+                
+                {
+                    orderValidationResult.ValidationResult.AddError("Order belongs to another customer");
+                    return orderValidationResult;
+                }
+            }
             if (!order.OrderItems.Any())
             {
                 orderValidationResult.ValidationResult.AddError("Order needs to have at least one product");
             }
-            else 
+            else
             {
                 List<int> productIds = new List<int>();
-                foreach (var item in order.OrderItems) 
+                foreach (var item in order.OrderItems)
                 {
                     if (productIds.Contains(item.ProductId))
                     {
@@ -59,12 +77,12 @@ namespace business.validata.com.Validators
                     var productexists = await genericValidationProduct.Exists(item.ProductId, BusinessSetOperation.Get);
                     if (productexists != null)
                     {
-                        if (productexists.Entity == null) 
+                        if (productexists.Entity == null)
                         {
                             orderValidationResult.ValidationResult.AddError("Product Not Found");
                             continue;
                         }
-                        
+
                         orderValidationResult.Products.Add(productexists.Entity);
                     }
                     productIds.Add(item.ProductId);

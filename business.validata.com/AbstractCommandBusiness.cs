@@ -56,6 +56,7 @@ namespace business.validata.com
             if (exist!=null && exist.Code!=null) 
             {
                 apiResult.Validations.Add(exist.Code);
+                return apiResult;
                 
             }
             List<Action<TEntity>> properties = new()

@@ -18,6 +18,10 @@ namespace business.validata.com.Adaptors
         }
         public async Task<Order> Invoke(OrderUpdateModel model, BusinessSetOperation businessSetOperation) 
         {
+            if (model == null) 
+            {
+                throw new ArgumentNullException(nameof(model));
+            }
             var productIds =model.Items!.Select(x => x.ProductId);
             var products = (await productRepository.GetAllAsync()).Where(p => productIds.Contains(p.ProductId));
             var orderId = businessSetOperation == BusinessSetOperation.Update ? model.OrderId : 0;
@@ -34,6 +38,7 @@ namespace business.validata.com.Adaptors
                     ProductId = orderItem.ProductId,
                     Quantity = orderItem.Quantity,
                     ProductPrice = products.FirstOrDefault(product => product.ProductId == orderItem.ProductId)?.Price ?? price,
+                    
                 }
                 ).ToList()
             };

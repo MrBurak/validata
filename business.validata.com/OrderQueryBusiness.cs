@@ -52,6 +52,10 @@ namespace business.validata.com
                     queryResult.Result = orders;
                     queryResult.Success = true;
                 }
+                else 
+                {
+                    queryResult.Exception = "No record found";
+                }
                 
             }
             catch (Exception ex) 
@@ -89,7 +93,7 @@ namespace business.validata.com
 
 
                 queryResult.Result = ObjectUtil.ConvertObj<OrderDetailViewModel, Order>(order);
-                queryResult.Success = false;
+                queryResult.Success = true;
             }
             catch (Exception ex)
             {

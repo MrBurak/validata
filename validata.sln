@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.13.35931.197
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "customer.validata.com", "api.validata.com\customer.validata.com.csproj", "{6C443BDA-F610-4CAF-BC2B-3E00A3A1DBEE}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "api.validata.com", "api.validata.com\api.validata.com.csproj", "{6C443BDA-F610-4CAF-BC2B-3E00A3A1DBEE}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Layers", "Layers", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
@@ -18,6 +18,12 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{C5C1312B-A902-4009-BCFF-963733CF7D90}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "util.validata.test", "util.validata.test\util.validata.test.csproj", "{E92BE14A-F40A-4B56-99F9-E4CB42465399}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "business.validata.test", "business.validata.test\business.validata.test.csproj", "{E020507F-72AE-4709-B759-0BAB13FC620D}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "api.validata.test", "api.validata.test\api.validata.test.csproj", "{364FBE78-D526-4595-9552-F87A66DBFCA0}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "model.validata.test", "model.validata.test\model.validata.test.csproj", "{DB0F7C27-3383-4A1C-93F4-9AF6B4D831C4}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -49,6 +55,18 @@ Global
 		{E92BE14A-F40A-4B56-99F9-E4CB42465399}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{E92BE14A-F40A-4B56-99F9-E4CB42465399}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{E92BE14A-F40A-4B56-99F9-E4CB42465399}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E020507F-72AE-4709-B759-0BAB13FC620D}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E020507F-72AE-4709-B759-0BAB13FC620D}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E020507F-72AE-4709-B759-0BAB13FC620D}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E020507F-72AE-4709-B759-0BAB13FC620D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{364FBE78-D526-4595-9552-F87A66DBFCA0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{364FBE78-D526-4595-9552-F87A66DBFCA0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{364FBE78-D526-4595-9552-F87A66DBFCA0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{364FBE78-D526-4595-9552-F87A66DBFCA0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{DB0F7C27-3383-4A1C-93F4-9AF6B4D831C4}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB0F7C27-3383-4A1C-93F4-9AF6B4D831C4}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB0F7C27-3383-4A1C-93F4-9AF6B4D831C4}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB0F7C27-3383-4A1C-93F4-9AF6B4D831C4}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -59,6 +77,9 @@ Global
 		{03B19C80-983E-4F39-BD8B-6242BFE2335A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{CA22DE45-5196-4AD2-B773-ADF678F3BFAD} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{E92BE14A-F40A-4B56-99F9-E4CB42465399} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
+		{E020507F-72AE-4709-B759-0BAB13FC620D} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
+		{364FBE78-D526-4595-9552-F87A66DBFCA0} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
+		{DB0F7C27-3383-4A1C-93F4-9AF6B4D831C4} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {015AE390-1300-4695-A6ED-C19CFDB00596}

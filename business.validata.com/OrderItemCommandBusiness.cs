@@ -28,13 +28,23 @@ namespace business.validata.com
             Expression<Func<OrderItem, bool>> expression= x=> x.OrderId == order.OrderId && x.DeletedOn ==null;
             await DeleteAllAsync(expression);
 
-            List<OrderItem> orderItems= new List<OrderItem>();
-            foreach (var item in order.OrderItems) 
+            List<OrderItem> orderItems= order.OrderItems.ToList();
+            List<OrderItem> savedOrderItems = new List<OrderItem>();
+            foreach (var item in orderItems) 
             {
-               orderItems.Add( await repository.AddAsync(item));
+                var saved = await repository.AddAsync(new OrderItem
+                {
+                    OrderId = item.OrderId,
+                    OperationSourceId = item.OperationSourceId,
+                    ProductId = item.ProductId,
+                    ProductPrice = item.ProductPrice,
+                    Quantity = item.Quantity,
+
+                });
+                savedOrderItems.Add(saved);
 
             }
-            return orderItems;
+            return savedOrderItems;
         }
 
         public async Task DeleteAllAsync(int orderId)

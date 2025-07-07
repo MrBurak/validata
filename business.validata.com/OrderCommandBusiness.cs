@@ -29,6 +29,7 @@ namespace business.validata.com
             ArgumentNullException.ThrowIfNull(validation);
             ArgumentNullException.ThrowIfNull(genericLambdaExpressions);
             ArgumentNullException.ThrowIfNull(orderAdaptor);
+            ArgumentNullException.ThrowIfNull(orderItemCommandBusiness);
             this.validation = validation;
             this.orderItemCommandBusiness = orderItemCommandBusiness;
             this.orderAdaptor = orderAdaptor;
@@ -89,7 +90,7 @@ namespace business.validata.com
 
         public override async Task<CommandResult<Order>> DeleteAsync(int id)
         {
-            var result = await DeleteAsync(id);
+            var result = await base.DeleteAsync(id);
             await orderItemCommandBusiness.DeleteAllAsync(id);
             return result;
         }
