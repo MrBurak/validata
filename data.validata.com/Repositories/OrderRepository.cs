@@ -22,7 +22,10 @@ namespace data.validata.com.Repositories
             var sql = $"SELECT * FROM {defaultSchema}.[Order] WHERE DeletedOn is null and OrderId = @OrderId and CustomerId = @CustomerId order by OrderDate desc";
             using (var connection = this.context.CreateConnection())
             {
-                return await connection.QueryFirstOrDefaultAsync<Order>(sql, new { OrderId = orderId, Customer=customerId });
+                var parameters = new DynamicParameters();
+                parameters.Add("@OrderId", orderId);
+                parameters.Add("@CustomerId", customerId);
+                return await connection.QueryFirstOrDefaultAsync<Order>(sql, parameters);
             }
         }
 

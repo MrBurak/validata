@@ -6,11 +6,6 @@ using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Product;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace api.validata.test
 {

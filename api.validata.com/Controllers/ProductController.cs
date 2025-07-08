@@ -2,7 +2,6 @@ using AutoMapper;
 using business.validata.com.Interfaces;
 using model.validata.com.Product;
 using data.validata.com.Entities;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using model.validata.com;
 using model.validata.com.Enumeration;
@@ -10,7 +9,7 @@ using model.validata.com.Enumeration;
 
 namespace api.validata.com.Controllers
 {
-    //[Authorize]
+    
     [ApiController]
     [Route("[controller]")]
     public class ProductController : ControllerBase

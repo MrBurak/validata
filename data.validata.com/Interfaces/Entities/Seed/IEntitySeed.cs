@@ -1,7 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 
 
-namespace data.validata.com.Entities.Seed.Interface
+namespace data.validata.com.Interfaces.Entities.Seed
 {
     public interface IEntitySeed
     {

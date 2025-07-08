@@ -28,6 +28,8 @@ namespace business.validata.com
             Expression<Func<OrderItem, bool>> expression= x=> x.OrderId == order.OrderId && x.DeletedOn ==null;
             await DeleteAllAsync(expression);
 
+            var repo = await repository.GetListAsync(expression);
+
             List<OrderItem> orderItems= order.OrderItems.ToList();
             List<OrderItem> savedOrderItems = new List<OrderItem>();
             foreach (var item in orderItems) 
@@ -44,20 +46,24 @@ namespace business.validata.com
                 savedOrderItems.Add(saved);
 
             }
-            return savedOrderItems;
+            return orderItems;
         }
 
         public async Task DeleteAllAsync(int orderId)
         {
             Expression<Func<OrderItem, bool>> expression = x => x.OrderId == orderId && x.DeletedOn == null;
+
+
             await DeleteAllAsync(expression);
         }
 
         public async Task DeleteAllForCustomerAsync(int customerId)
         {
-            Expression<Func<Order, bool>> expression = x => x.CustomerId == customerId && x.DeletedOn == null;
+            Expression<Func<Order, bool>> expression = x => x.CustomerId == customerId;
             var orderIds = (await repositoryOrder.GetListAsync(expression)).Select(x=> x.OrderId).ToList();
             Expression<Func<OrderItem, bool>> expressionItem = x => orderIds.Contains(x.OrderId) && x.DeletedOn == null;
+
+            
             await DeleteAllAsync(expressionItem);
         }
     }

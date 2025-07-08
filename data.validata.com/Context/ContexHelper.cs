@@ -1,4 +1,4 @@
-﻿using data.validata.com.Entities.Seed.Interface;
+﻿using data.validata.com.Interfaces.Entities.Seed;
 using Microsoft.EntityFrameworkCore;
 
 namespace data.validata.com.Context

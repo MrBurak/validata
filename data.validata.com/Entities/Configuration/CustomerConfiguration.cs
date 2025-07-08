@@ -1,12 +1,10 @@
 ﻿using data.validata.com.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using System.Diagnostics.CodeAnalysis;
 using util.validata.com;
 
-namespace Dayforce.PositionClassificationService.Data.Entities.Configuration
+namespace data.validata.com.Configuration
 {
-    [ExcludeFromCodeCoverage]
     public class CustomerConfiguration : IEntityTypeConfiguration<Customer>
     {
         public void Configure(EntityTypeBuilder<Customer> builder)

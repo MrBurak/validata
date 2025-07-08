@@ -1,5 +1,4 @@
-﻿using data.validata.com.Entities.Seed.Interface;
-
+﻿using data.validata.com.Interfaces.Entities.Seed;
 using Microsoft.EntityFrameworkCore;
 using model.validata.com.Enumeration;
 using util.validata.com;

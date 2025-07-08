@@ -4,12 +4,6 @@ using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using model.validata.com.Validators;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace business.validata.test
 {
@@ -194,7 +188,7 @@ namespace business.validata.test
             int orderId = 1, customerId = 1;
             var order = new Order { OrderId = orderId, CustomerId = customerId, OrderDate = DateTime.Now, TotalAmount = 0.00f};
             var emptyOrderItems = new List<OrderItem>();
-            var products = new List<Product>(); // No products needed if no order items
+            var products = new List<Product>(); 
 
             _mockOrderRepository.Setup(r => r.GetByIdAsync(orderId, customerId)).ReturnsAsync(order);
             _mockOrderItemRepository.Setup(r => r.GetAllAsync(customerId)).ReturnsAsync(emptyOrderItems);

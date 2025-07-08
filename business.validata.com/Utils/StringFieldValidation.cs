@@ -1,6 +1,4 @@
 ﻿using business.validata.com.Interfaces.Utils;
-using business.validata.com.Interfaces.Validators;
-using business.validata.com.Validators;
 using data.validata.com.Interfaces.Repository;
 using model.validata.com.Validators;
 using util.validata.com;

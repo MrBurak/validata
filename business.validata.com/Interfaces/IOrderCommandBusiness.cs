@@ -1,6 +1,5 @@
 ﻿using data.validata.com.Entities;
 using model.validata.com;
-using model.validata.com.Customer;
 using model.validata.com.Enumeration;
 using model.validata.com.Order;
 namespace business.validata.com.Interfaces

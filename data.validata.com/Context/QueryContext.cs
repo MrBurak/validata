@@ -14,6 +14,9 @@ namespace data.validata.com.Context
             this.configuration = configuration;
             this.connectionString = this.configuration.GetConnectionString("validataconnectionstring")!;
         }
+
+
+
         public IDbConnection CreateConnection() => new SqlConnection(this.connectionString);
     }
 }

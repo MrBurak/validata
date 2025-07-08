@@ -25,10 +25,10 @@ namespace business.validata.com
             this.validation = validation;
         }
 
-        public async Task<CommandResult<ProductModel>> InvokeAsync(Product Product, BusinessSetOperation businessSetOperation) 
+        public async Task<CommandResult<ProductModel>> InvokeAsync(Product product, BusinessSetOperation businessSetOperation) 
         {
             CommandResult<ProductModel> apiResult = new CommandResult<ProductModel>();
-            var validate = await validation.InvokeAsync(Product, businessSetOperation);
+            var validate = await validation.InvokeAsync(product, businessSetOperation);
             if (!validate.IsValid) 
             {
                 apiResult.Validations=validate.Errors;
@@ -42,11 +42,12 @@ namespace business.validata.com
                     {
                         x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
                         x.OperationSourceId = (int) BusinessOperationSource.Api;
-                        x.Name=Product.Name;
-                        x.Price=Product.Price;
+                        x.Name=product.Name;
+                        x.Price=product.Price;
                     }
                 };
-                var result= await InvokeAsync(validate.Entity!, Product, businessSetOperation, properties);
+                product.OperationSourceId = (int)BusinessOperationSource.Api;
+                var result= await InvokeAsync(validate.Entity!, product, businessSetOperation, properties);
                 apiResult.Result = ObjectUtil.ConvertObj<ProductModel, Product>(result!);
                 apiResult.Success = true;
 

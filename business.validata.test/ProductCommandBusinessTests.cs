@@ -47,7 +47,7 @@ namespace business.validata.test
             _mockRepository.Setup(r => r.AddAsync(It.IsAny<Product>()))
                 .ReturnsAsync((Product product) =>
                 {
-                    product.ProductId = 1; // Simulate ID being set by DB
+                    product.ProductId = 1; 
                     return product;
                 });
             _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Expression<Func<Product, bool>>>(), It.IsAny<List<Action<Product>>>()))

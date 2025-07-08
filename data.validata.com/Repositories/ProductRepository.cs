@@ -1,5 +1,4 @@
 ﻿using Dapper;
-using System.Diagnostics.CodeAnalysis;
 using data.validata.com.Interfaces.Repository;
 using data.validata.com.Entities;
 using data.validata.com.Context;
@@ -7,7 +6,6 @@ using data.validata.com.Context;
 
 namespace data.validata.com.Repositories
 {
-    [ExcludeFromCodeCoverage]
     public class ProductRepository : IProductRepository
     {
         private string defaultSchema = DbConsts.DefaultSchema;

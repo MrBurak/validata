@@ -2,18 +2,13 @@
 using data.validata.com.Interfaces.Repository;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
-using System.Diagnostics.CodeAnalysis;
 using System.Linq.Expressions;
-using util.validata.com;
 
 namespace data.validata.com.Repositories
 {
-    [ExcludeFromCodeCoverage]
     public class CommandRepository<T> : ICommandRepository<T>
         where T : class, new()
     {
-
-        
 
 
         private CommandContext validataDbContext;
@@ -22,11 +17,6 @@ namespace data.validata.com.Repositories
         {
             this.validataDbContext = validataDbContext;
         }
-
-        
-
-        
-
         public async Task<T?> GetEntityAsync(Expression<Func<T, bool>> query)
         {
             var entity = await validataDbContext.Set<T>()
@@ -78,8 +68,6 @@ namespace data.validata.com.Repositories
 
             return validataDbContext.SaveChanges() != 0;
         }
-
-        
 
         public async Task UpdateAsync(Expression<Func<T, bool>> filterExpression, List<Action<T>> properties)
         {

@@ -84,7 +84,6 @@ namespace model.validata.test
             Assert.Null(queryResult.Exception);
         }
 
-        // Assuming Product class is defined in the same namespace or accessible
         public class Product
         {
             public int ProductId { get; set; }

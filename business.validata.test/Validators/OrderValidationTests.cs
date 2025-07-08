@@ -1,15 +1,9 @@
 ﻿using business.validata.com.Interfaces.Validators;
 using business.validata.com.Validators;
 using data.validata.com.Entities;
-using data.validata.com.Interfaces.Repository;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace business.validata.test.Validators
 {
@@ -193,7 +187,7 @@ namespace business.validata.test.Validators
 
             var product102 = new Product { ProductId = 102, Name = "Product B" };
             _mockGenericValidationProduct.Setup(m => m.Exists(101, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = new Product { ProductId = 101 } }); // Product 101 exists but quantity is 0
+                .ReturnsAsync(new ExistsResult<Product> { Entity = new Product { ProductId = 101 } }); 
             _mockGenericValidationProduct.Setup(m => m.Exists(102, BusinessSetOperation.Get))
                 .ReturnsAsync(new ExistsResult<Product> { Entity = product102 });
 

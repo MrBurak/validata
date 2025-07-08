@@ -60,10 +60,22 @@ namespace business.validata.com
 
                     }
                 };
-               
+                foreach (var item in order.OrderItems)
+                {
+                    item.DeletedOn = null;
+                    item.OperationSourceId = (int)BusinessOperationSource.Api;
+                }
+
                 var result = await InvokeAsync(validate.ValidationResult.Entity!, order, businessSetOperation, properties);
-                order = result!;
-                var orderitems = await orderItemCommandBusiness.AddAsync(order);
+                order.OrderId = result!.OrderId;
+                
+               
+                var orderitems=order.OrderItems;
+                if (businessSetOperation.Equals(BusinessSetOperation.Update)) 
+                {
+                    orderitems = await orderItemCommandBusiness.AddAsync(order);
+                }
+                
                 var orderDetailViewModel = new OrderDetailViewModel
                 {
                     OrderId = order.OrderId,

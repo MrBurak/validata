@@ -1,8 +1,4 @@
-﻿
-
-using model.validata.com.Enumeration;
-
-namespace model.validata.com.Validators
+﻿namespace model.validata.com.Validators
 {
     public class ValidationResult<TEntity>
     {

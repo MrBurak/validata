@@ -3,12 +3,6 @@ using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using Microsoft.Extensions.Logging;
 using Moq;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace business.validata.test
 {

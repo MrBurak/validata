@@ -26,7 +26,7 @@ namespace model.validata.test.Order
             Assert.Equal(5, model.Quantity);
             Assert.Equal(10.50f, model.ProductPrice);
             Assert.Equal("Test Product", model.ProductName);
-            Assert.Equal(5 * 10.50f, model.TotalAmount); // 52.5f
+            Assert.Equal(5 * 10.50f, model.TotalAmount); 
         }
 
         [Fact]
@@ -118,7 +118,7 @@ namespace model.validata.test.Order
             var errors = ValidateModel(model);
             Assert.Empty(errors);
 
-            var model2 = new OrderItemViewModel(); // Default values
+            var model2 = new OrderItemViewModel(); 
             errors = ValidateModel(model2);
             Assert.Empty(errors);
         }

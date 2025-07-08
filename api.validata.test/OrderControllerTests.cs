@@ -24,7 +24,7 @@ namespace api.validata.test
             _mockQueryBusiness = new Mock<IOrderQueryBusiness>();
             _controller = new OrderController(
                 _mockLogger.Object,
-                _mockQueryBusiness.Object, // Note: Order of arguments in constructor
+                _mockQueryBusiness.Object,
                 _mockCommandBusiness.Object
             );
         }

@@ -1,13 +1,11 @@
-﻿using data.validata.com.Entities;
+﻿using data.validata.com.Configuration;
+using data.validata.com.Entities;
 using data.validata.com.Entities.Configuration;
 using data.validata.com.Entities.Seed;
-using Dayforce.PositionClassificationService.Data.Entities.Configuration;
 using Microsoft.EntityFrameworkCore;
-using System.Diagnostics.CodeAnalysis;
 
 namespace data.validata.com.Context
 {
-    [ExcludeFromCodeCoverage]
     public partial class CommandContext : DbContext
     {
         public const string DefaultSchema = DbConsts.DefaultSchema;

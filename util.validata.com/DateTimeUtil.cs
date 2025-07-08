@@ -1,7 +1,4 @@
-﻿using System.Diagnostics.CodeAnalysis;
-
-
-namespace util.validata.com
+﻿namespace util.validata.com
 {
   
     public class DateTimeUtil

@@ -1,10 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore.Metadata.Builders;
-using Microsoft.EntityFrameworkCore;
-using System.Diagnostics.CodeAnalysis;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace data.validata.com.Entities.Configuration
 {
-    [ExcludeFromCodeCoverage]
     public class OperationSourceConfiguration : IEntityTypeConfiguration<OperationSource>
     {
         public void Configure(EntityTypeBuilder<OperationSource> builder)
