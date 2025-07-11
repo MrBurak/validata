@@ -1,6 +1,7 @@
 ﻿using business.validata.com.Interfaces;
 using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Order;
 
@@ -23,7 +24,7 @@ namespace business.validata.com.Adaptors
                 throw new ArgumentNullException(nameof(model));
             }
             var productIds =model.Items!.Select(x => x.ProductId);
-            var products = (await productRepository.GetAllAsync()).Where(p => productIds.Contains(p.ProductId));
+            var products = (await productRepository.GetAllAsync(new PaginationRequest(1, int.MaxValue))).Where(p => productIds.Contains(p.ProductId));
             var orderId = businessSetOperation == BusinessSetOperation.Update ? model.OrderId : 0;
             float price = 0;
             var order = new Order

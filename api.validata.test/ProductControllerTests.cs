@@ -6,6 +6,7 @@ using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Product;
 using Moq;
+using test.utils;
 
 namespace api.validata.test
 {
@@ -55,19 +56,19 @@ namespace api.validata.test
             var expectedResult = new QueryResult<IEnumerable<ProductModel>>
             {
                 Success = true,
-                Result = new List<ProductModel>
+                Data = new List<ProductModel>
             {
                 new ProductModel { ProductId = 1, Name = "Laptop", Price = 1200.00f },
                 new ProductModel { ProductId = 2, Name = "Mouse", Price = 25.00f }
             }
             };
 
-            _mockQueryBusiness.Setup(b => b.ListAsync()).ReturnsAsync(expectedResult);
+            _mockQueryBusiness.Setup(b => b.ListAsync(PaginationUtil.paginationRequest)).ReturnsAsync(expectedResult);
 
-            var result = await _controller.List();
+            var result = await _controller.List(1, 100);
 
             Assert.Equal(expectedResult, result);
-            _mockQueryBusiness.Verify(b => b.ListAsync(), Times.Once);
+            _mockQueryBusiness.Verify(b => b.ListAsync(PaginationUtil.paginationRequest), Times.Once);
         }
 
         [Fact]
@@ -77,7 +78,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<ProductModel>
             {
                 Success = true,
-                Result = new ProductModel { ProductId = 1, Name = "New Product", Price = 99.99f }
+                Data = new ProductModel { ProductId = 1, Name = "New Product", Price = 99.99f }
             };
 
             _mockCommandBusiness.Setup(b => b.InvokeAsync(It.IsAny<Product>(), BusinessSetOperation.Create))
@@ -98,7 +99,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<ProductModel>
             {
                 Success = true,
-                Result = new ProductModel { ProductId = 1, Name = "Updated Product", Price = 199.99f }
+                Data = new ProductModel { ProductId = 1, Name = "Updated Product", Price = 199.99f }
             };
 
             _mockCommandBusiness.Setup(b => b.InvokeAsync(It.IsAny<Product>(), BusinessSetOperation.Update))
@@ -119,7 +120,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<Product>
             {
                 Success = true,
-                Result = new Product { ProductId = productIdToDelete, Name = "Deleted Product" }
+                Data = new Product { ProductId = productIdToDelete, Name = "Deleted Product" }
             };
 
             _mockCommandBusiness.Setup(b => b.DeleteAsync(productIdToDelete)).ReturnsAsync(expectedCommandResult);
@@ -137,7 +138,7 @@ namespace api.validata.test
             var expectedResult = new QueryResult<ProductModel?>
             {
                 Success = true,
-                Result = new ProductModel { ProductId = productIdToGet, Name = "Retrieved Product", Price = 500.00f }
+                Data = new ProductModel { ProductId = productIdToGet, Name = "Retrieved Product", Price = 500.00f }
             };
 
             _mockQueryBusiness.Setup(b => b.GetAsync(productIdToGet)).ReturnsAsync(expectedResult);

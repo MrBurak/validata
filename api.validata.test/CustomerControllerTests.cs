@@ -6,6 +6,7 @@ using model.validata.com;
 using model.validata.com.Customer;
 using model.validata.com.Enumeration;
 using Moq;
+using test.utils;
 
 namespace api.validata.test
 {
@@ -55,19 +56,19 @@ namespace api.validata.test
             var expectedResult = new QueryResult<IEnumerable<CustomerViewModel>>
             {
                 Success = true,
-                Result = new List<CustomerViewModel>
+                Data = new List<CustomerViewModel>
             {
                 new CustomerViewModel { CustomerId = 1, FirstName = "Test1" },
                 new CustomerViewModel { CustomerId = 2, FirstName = "Test2" }
             }
             };
 
-            _mockQueryBusiness.Setup(b => b.ListAsync()).ReturnsAsync(expectedResult);
+            _mockQueryBusiness.Setup(b => b.ListAsync(PaginationUtil.paginationRequest)).ReturnsAsync(expectedResult);
 
-            var result = await _controller.List();
+            var result = await _controller.List(1, 100);
 
             Assert.Equal(expectedResult, result);
-            _mockQueryBusiness.Verify(b => b.ListAsync(), Times.Once);
+            _mockQueryBusiness.Verify(b => b.ListAsync(PaginationUtil.paginationRequest), Times.Once);
         }
 
         [Fact]
@@ -77,7 +78,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<CustomerViewModel>
             {
                 Success = true,
-                Result = new CustomerViewModel { CustomerId = 1, FirstName = "New Customer" }
+                Data = new CustomerViewModel { CustomerId = 1, FirstName = "New Customer" }
             };
 
             _mockCommandBusiness.Setup(b => b.InvokeAsync(It.IsAny<Customer>(), BusinessSetOperation.Create))
@@ -98,7 +99,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<CustomerViewModel>
             {
                 Success = true,
-                Result = new CustomerViewModel { CustomerId = 1, FirstName = "Updated Customer" }
+                Data = new CustomerViewModel { CustomerId = 1, FirstName = "Updated Customer" }
             };
 
             _mockCommandBusiness.Setup(b => b.InvokeAsync(It.IsAny<Customer>(), BusinessSetOperation.Update))
@@ -119,7 +120,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<Customer>
             {
                 Success = true,
-                Result = new Customer { CustomerId = customerIdToDelete, FirstName = "Deleted Customer" }
+                Data = new Customer { CustomerId = customerIdToDelete, FirstName = "Deleted Customer" }
             };
 
             _mockCommandBusiness.Setup(b => b.DeleteAsync(customerIdToDelete)).ReturnsAsync(expectedCommandResult);
@@ -137,7 +138,7 @@ namespace api.validata.test
             var expectedResult = new QueryResult<CustomerViewModel?>
             {
                 Success = true,
-                Result = new CustomerViewModel { CustomerId = customerIdToGet, FirstName = "Retrieved Customer" }
+                Data = new CustomerViewModel { CustomerId = customerIdToGet, FirstName = "Retrieved Customer" }
             };
 
             _mockQueryBusiness.Setup(b => b.GetAsync(customerIdToGet)).ReturnsAsync(expectedResult);

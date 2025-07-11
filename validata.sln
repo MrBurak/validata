@@ -27,6 +27,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "model.validata.test", "mode
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "data.validata.test", "data.validata.test\data.validata.test.csproj", "{66B83A2E-5F75-483A-AE83-019928A4AC8D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test.utils", "test.utils\test.utils.csproj", "{92D71E86-D9CB-48AA-91C0-8BD539C9A76E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -73,6 +75,10 @@ Global
 		{66B83A2E-5F75-483A-AE83-019928A4AC8D}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{66B83A2E-5F75-483A-AE83-019928A4AC8D}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{66B83A2E-5F75-483A-AE83-019928A4AC8D}.Release|Any CPU.Build.0 = Release|Any CPU
+		{92D71E86-D9CB-48AA-91C0-8BD539C9A76E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{92D71E86-D9CB-48AA-91C0-8BD539C9A76E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{92D71E86-D9CB-48AA-91C0-8BD539C9A76E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{92D71E86-D9CB-48AA-91C0-8BD539C9A76E}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -87,6 +93,7 @@ Global
 		{364FBE78-D526-4595-9552-F87A66DBFCA0} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
 		{DB0F7C27-3383-4A1C-93F4-9AF6B4D831C4} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
 		{66B83A2E-5F75-483A-AE83-019928A4AC8D} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
+		{92D71E86-D9CB-48AA-91C0-8BD539C9A76E} = {C5C1312B-A902-4009-BCFF-963733CF7D90}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {015AE390-1300-4695-A6ED-C19CFDB00596}

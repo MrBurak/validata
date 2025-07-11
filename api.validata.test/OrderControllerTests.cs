@@ -6,6 +6,7 @@ using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Order;
 using Moq;
+using test.utils;
 
 
 namespace api.validata.test
@@ -57,19 +58,19 @@ namespace api.validata.test
             var expectedResult = new QueryResult<IEnumerable<OrderViewModel>>
             {
                 Success = true,
-                Result = new List<OrderViewModel>
+                Data = new List<OrderViewModel>
             {
                 new OrderViewModel { OrderId = 1, TotalAmount = 100.00f },
                 new OrderViewModel { OrderId = 2, TotalAmount = 250.00f }
             }
             };
 
-            _mockQueryBusiness.Setup(b => b.ListAsync(customerId)).ReturnsAsync(expectedResult);
+            _mockQueryBusiness.Setup(b => b.ListAsync(customerId, PaginationUtil.paginationRequest)).ReturnsAsync(expectedResult);
 
-            var result = await _controller.List(customerId);
+            var result = await _controller.List(customerId, PaginationUtil.paginationRequest.pageNumber, PaginationUtil.paginationRequest.pageSize);
 
             Assert.Equal(expectedResult, result);
-            _mockQueryBusiness.Verify(b => b.ListAsync(customerId), Times.Once);
+            _mockQueryBusiness.Verify(b => b.ListAsync(customerId, PaginationUtil.paginationRequest), Times.Once);
         }
 
         [Fact]
@@ -89,7 +90,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<OrderDetailViewModel>
             {
                 Success = true,
-                Result = expectedOrderDetail
+                Data = expectedOrderDetail
             };
 
             _mockCommandBusiness.Setup(b => b.InvokeAsync(
@@ -122,7 +123,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<OrderDetailViewModel>
             {
                 Success = true,
-                Result = expectedOrderDetail
+                Data = expectedOrderDetail
             };
 
             _mockCommandBusiness.Setup(b => b.InvokeAsync(updateModel, BusinessSetOperation.Update))
@@ -141,7 +142,7 @@ namespace api.validata.test
             var expectedCommandResult = new CommandResult<Order>
             {
                 Success = true,
-                Result = new Order { OrderId = orderIdToDelete }
+                Data = new Order { OrderId = orderIdToDelete }
             };
 
             _mockCommandBusiness.Setup(b => b.DeleteAsync(orderIdToDelete)).ReturnsAsync(expectedCommandResult);
@@ -160,7 +161,7 @@ namespace api.validata.test
             var expectedResult = new QueryResult<OrderDetailViewModel?>
             {
                 Success = true,
-                Result = new OrderDetailViewModel { OrderId = orderId, TotalAmount = 150.00f }
+                Data = new OrderDetailViewModel { OrderId = orderId, TotalAmount = 150.00f }
             };
 
             _mockQueryBusiness.Setup(b => b.GetAsync(orderId, customerId)).ReturnsAsync(expectedResult);

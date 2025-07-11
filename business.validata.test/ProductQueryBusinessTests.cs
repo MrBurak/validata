@@ -3,6 +3,7 @@ using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using Microsoft.Extensions.Logging;
 using Moq;
+using test.utils;
 
 namespace business.validata.test
 {
@@ -34,20 +35,20 @@ namespace business.validata.test
             new Product { ProductId = 1, Name = "Laptop", Price = 1200.00f },
             new Product { ProductId = 2, Name = "Mouse", Price = 25.50f }
         };
-            _mockRepository.Setup(r => r.GetAllAsync()).ReturnsAsync(products);
+            _mockRepository.Setup(r => r.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(products);
 
-            var result = await _productQueryBusiness.ListAsync();
+            var result = await _productQueryBusiness.ListAsync(PaginationUtil.paginationRequest);
 
             Assert.True(result.Success);
             Assert.Null(result.Exception);
-            Assert.NotNull(result.Result);
-            var productModels = result.Result!.ToList();
+            Assert.NotNull(result.Data);
+            var productModels = result.Data!.ToList();
             Assert.Equal(2, productModels.Count);
             Assert.Equal("Laptop", productModels[0].Name);
             Assert.Equal(1200.00f, productModels[0].Price);
             Assert.Equal("Mouse", productModels[1].Name);
             Assert.Equal(25.50f, productModels[1].Price);
-            _mockRepository.Verify(r => r.GetAllAsync(), Times.Once);
+            _mockRepository.Verify(r => r.GetAllAsync(PaginationUtil.paginationRequest), Times.Once);
             
         }
 
@@ -55,14 +56,14 @@ namespace business.validata.test
         public async Task ListAsync_HandlesRepositoryException()
         {
             var expectedExceptionMessage = "Database error during ListAsync";
-            _mockRepository.Setup(r => r.GetAllAsync()).ThrowsAsync(new Exception(expectedExceptionMessage));
+            _mockRepository.Setup(r => r.GetAllAsync(PaginationUtil.paginationRequest)).ThrowsAsync(new Exception(expectedExceptionMessage));
 
-            var result = await _productQueryBusiness.ListAsync();
+            var result = await _productQueryBusiness.ListAsync(PaginationUtil.paginationRequest);
 
             Assert.False(result.Success);
             Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Result);
-            _mockRepository.Verify(r => r.GetAllAsync(), Times.Once);
+            Assert.Null(result.Data);
+            _mockRepository.Verify(r => r.GetAllAsync(PaginationUtil.paginationRequest), Times.Once);
             
         }
 
@@ -77,10 +78,10 @@ namespace business.validata.test
 
             Assert.True(result.Success);
             Assert.Null(result.Exception);
-            Assert.NotNull(result.Result);
-            Assert.Equal(productId, result.Result!.ProductId);
-            Assert.Equal("Keyboard", result.Result.Name);
-            Assert.Equal(75.00f, result.Result.Price);
+            Assert.NotNull(result.Data);
+            Assert.Equal(productId, result.Data!.ProductId);
+            Assert.Equal("Keyboard", result.Data.Name);
+            Assert.Equal(75.00f, result.Data.Price);
             _mockRepository.Verify(r => r.GetByIdAsync(productId), Times.Once);
             
         }
@@ -95,7 +96,7 @@ namespace business.validata.test
 
             Assert.False(result.Success);
             Assert.Equal("No record found", result.Exception);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
             _mockRepository.Verify(r => r.GetByIdAsync(productId), Times.Once);
             
         }
@@ -111,7 +112,7 @@ namespace business.validata.test
 
             Assert.False(result.Success);
             Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
             _mockRepository.Verify(r => r.GetByIdAsync(productId), Times.Once);
           
         }

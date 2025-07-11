@@ -5,7 +5,7 @@ using model.validata.com;
 using util.validata.com;
 using data.validata.com.Entities;
 using business.validata.com.Interfaces.Validators;
-using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 
 
 namespace business.validata.com
@@ -16,92 +16,112 @@ namespace business.validata.com
         private readonly IOrderItemRepository repositoryItem;
         private readonly IProductRepository repositoryProduct;
         private readonly IGenericValidation<Customer> genericValidationCustomer;
+        private readonly ILogger<OrderQueryBusiness> logger;
         public OrderQueryBusiness
         (
-            IOrderRepository repository, 
+            IOrderRepository repository,
             IOrderItemRepository repositoryItem,
             IProductRepository repositoryProduct,
-            IGenericValidation<Customer> genericValidationCustomer
+            IGenericValidation<Customer> genericValidationCustomer,
+            ILogger<OrderQueryBusiness> logger
             )
         {
             ArgumentNullException.ThrowIfNull(repository);
             ArgumentNullException.ThrowIfNull(repositoryItem);
             ArgumentNullException.ThrowIfNull(repositoryProduct);
-            ArgumentNullException.ThrowIfNull (genericValidationCustomer);
+            ArgumentNullException.ThrowIfNull(genericValidationCustomer);
+            ArgumentNullException.ThrowIfNull(logger);
             this.repository = repository;
             this.repositoryItem = repositoryItem;
             this.repositoryProduct = repositoryProduct;
             this.genericValidationCustomer = genericValidationCustomer;
+            this.logger = logger;
         }
-        public async Task<QueryResult<IEnumerable<OrderViewModel>>> ListAsync(int customerId)
+        public async Task<QueryResult<IEnumerable<OrderViewModel>>> ListAsync(int customerId, PaginationRequest paginationRequest)
         {
-            var queryResult = new QueryResult<IEnumerable<OrderViewModel>>();
-            var customerExists=await genericValidationCustomer.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get);
+            logger.LogInformation("Listing orders for CustomerId={CustomerId}, Page={PageNumber}, Size={PageSize}", customerId, paginationRequest.pageNumber, paginationRequest.pageSize);
 
-            if (customerExists != null && customerExists.Entity == null) 
+            var queryResult = new QueryResult<IEnumerable<OrderViewModel>>();
+            var customerExists = await genericValidationCustomer.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get);
+
+            if (customerExists != null && customerExists.Entity == null)
             {
-                queryResult.Exception= "Customer Not Found";
+                logger.LogWarning("Customer not found with ID={CustomerId}", customerId);
+                queryResult.Exception = "Customer Not Found";
                 return queryResult;
             }
+
             try
             {
-                var orders= ObjectUtil.ConvertObj<IEnumerable<OrderViewModel>, IEnumerable<Order>>(await repository.GetAllAsync(customerId)).ToList();
+                var orders = ObjectUtil.ConvertObj<IEnumerable<OrderViewModel>, IEnumerable<Order>>(await repository.GetAllAsync(customerId, paginationRequest)).ToList();
 
                 if (orders.Any())
                 {
-                    queryResult.Result = orders;
+                    queryResult.Data = orders;
                     queryResult.Success = true;
+                    logger.LogInformation("Found {Count} orders for CustomerId={CustomerId}", orders.Count, customerId);
                 }
-                else 
+                else
                 {
+                    logger.LogInformation("No orders found for CustomerId={CustomerId}", customerId);
                     queryResult.Exception = "No record found";
                 }
-                
-            }
-            catch (Exception ex) 
-            {
-                queryResult.Success = false;
-                queryResult.Exception=ex.Message;
-            }
-           return queryResult;
-        }
-
-        public async Task<QueryResult<OrderDetailViewModel?>> GetAsync(int orderId, int customerId)
-        {
-            var queryResult = new QueryResult<OrderDetailViewModel?>();
-            try 
-            {
-                var order = (await repository.GetByIdAsync(orderId, customerId));
-                if (order == null) 
-                {
-                    queryResult.Exception = "No record found";
-                    queryResult.Success = false;
-                    return queryResult;
-                }
-                var orderModel= ObjectUtil.ConvertObj<OrderDetailViewModel, Order>(order);
-                
-                var orderItems = (await repositoryItem.GetAllAsync(customerId)).Where(x => x.OrderId==orderId);
-                var products = (await repositoryProduct.GetAllWithDeletedAsync()).Where(x => orderItems.Select(o=> o.ProductId).Contains(x.ProductId));
-             
-                orderModel.Items = orderItems.Select(x=> new OrderItemViewModel 
-                { 
-                    ProductPrice = x.ProductPrice,  
-                    Quantity = x.Quantity,  
-                    ProductName=products.FirstOrDefault(p=> p.ProductId==x.ProductId)?.Name,
-                });
-
-
-
-                queryResult.Result = ObjectUtil.ConvertObj<OrderDetailViewModel, Order>(order);
-                queryResult.Success = true;
             }
             catch (Exception ex)
             {
+                logger.LogError(ex, "Error while listing orders for CustomerId={CustomerId}", customerId);
                 queryResult.Success = false;
                 queryResult.Exception = ex.Message;
             }
             return queryResult;
+        }
 
+        public async Task<QueryResult<OrderDetailViewModel?>> GetAsync(int orderId, int customerId)
+        {
+            logger.LogInformation("Getting order details for OrderId={OrderId}, CustomerId={CustomerId}", orderId, customerId);
+
+            var queryResult = new QueryResult<OrderDetailViewModel?>();
+            try
+            {
+                var order = await repository.GetByIdAsync(orderId, customerId);
+                if (order == null)
+                {
+                    logger.LogWarning("Order not found with OrderId={OrderId}, CustomerId={CustomerId}", orderId, customerId);
+                    queryResult.Exception = "No record found";
+                    queryResult.Success = false;
+                    return queryResult;
+                }
+
+                var orderModel = ObjectUtil.ConvertObj<OrderDetailViewModel, Order>(order);
+
+                var orderItems = (await repositoryItem.GetAllAsync(customerId))
+                    .Where(x => x.OrderId == orderId)
+                    .ToList();
+
+                var productIds = orderItems.Select(o => o.ProductId).Distinct().ToList();
+                var products = (await repositoryProduct.GetAllWithDeletedAsync())
+                    .Where(x => productIds.Contains(x.ProductId))
+                    .ToList();
+
+                orderModel.Items = orderItems.Select(x => new OrderItemViewModel
+                {
+                    ProductPrice = x.ProductPrice,
+                    Quantity = x.Quantity,
+                    ProductName = products.FirstOrDefault(p => p.ProductId == x.ProductId)?.Name ?? string.Empty,
+                });
+
+                queryResult.Data = orderModel;
+                queryResult.Success = true;
+
+                logger.LogInformation("Retrieved order details for OrderId={OrderId}, CustomerId={CustomerId}", orderId, customerId);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error getting order details for OrderId={OrderId}, CustomerId={CustomerId}", orderId, customerId);
+                queryResult.Success = false;
+                queryResult.Exception = ex.Message;
+            }
+            return queryResult;
         }
     }
 }

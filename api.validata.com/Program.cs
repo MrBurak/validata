@@ -38,7 +38,7 @@ builder.Services.AddSingleton<IMetadata, Metadata>(serviceProvider => MetadataFa
 builder.Services.AddTransient<IGenericLambdaExpressions, GenericLambdaExpressions>();
 builder.Services.AddTransient(typeof(IGenericValidation<>), typeof(GenericValidation<>));
 builder.Services.AddTransient(typeof(IStringFieldValidation<>), typeof(StringFieldValidation<>));
-
+builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
 builder.Services.AddTransient<ICustomerValidation, CustomerValidation>();
 builder.Services.AddTransient<ICustomerCommandBusiness, CustomerCommandBusiness>();
 builder.Services.AddTransient<ICustomerQueryBusiness, CustomerQueryBusiness>();
@@ -49,7 +49,6 @@ builder.Services.AddTransient<IOrderValidation, OrderValidation>();
 builder.Services.AddTransient<IOrderQueryBusiness, OrderQueryBusiness>();
 builder.Services.AddTransient<IOrderCommandBusiness, OrderCommandBusiness>();
 builder.Services.AddTransient<IOrderAdaptor, OrderAdaptor>();
-builder.Services.AddTransient<IOrderItemCommandBusiness, OrderItemCommandBusiness>();
 
 #endregion
 

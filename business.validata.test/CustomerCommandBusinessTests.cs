@@ -4,6 +4,7 @@ using business.validata.com.Interfaces.Utils;
 using business.validata.com.Interfaces.Validators;
 using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using Microsoft.Extensions.Logging;
 using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
@@ -14,27 +15,28 @@ namespace business.validata.test
 {
     public class CustomerCommandBusinessTests
     {
-        private readonly Mock<ICustomerValidation> _mockCustomerValidation;
-        private readonly Mock<ICommandRepository<Customer>> _mockRepository;
-        private readonly Mock<IGenericValidation<Customer>> _mockGenericValidation;
-        private readonly Mock<IGenericLambdaExpressions> _mockGenericLambdaExpressions;
-        private readonly Mock<IOrderCommandBusiness> _mockOrderCommandBusiness;
+        private readonly Mock<ICustomerValidation> _mockCustomerValidation=new();
+        private readonly Mock<ICommandRepository<Customer>> _mockRepository=new();
+        private readonly Mock<IGenericValidation<Customer>> _mockGenericValidation = new();
+        private readonly Mock<IGenericLambdaExpressions> _mockGenericLambdaExpressions = new();
+        private readonly Mock<IOrderCommandBusiness> _mockOrderCommandBusiness = new();
+        private readonly Mock<IUnitOfWork> _mockUnitOfWork= new();
+        private readonly Mock<ILogger<CustomerCommandBusiness>> _mockLogger = new();
         private readonly CustomerCommandBusiness _customerCommandBusiness;
 
         public CustomerCommandBusinessTests()
         {
-            _mockCustomerValidation = new Mock<ICustomerValidation>();
-            _mockRepository = new Mock<ICommandRepository<Customer>>();
-            _mockGenericValidation = new Mock<IGenericValidation<Customer>>();
-            _mockGenericLambdaExpressions = new Mock<IGenericLambdaExpressions>();
-            _mockOrderCommandBusiness = new Mock<IOrderCommandBusiness>();
+            
 
             _customerCommandBusiness = new CustomerCommandBusiness(
                 _mockCustomerValidation.Object,
                 _mockRepository.Object,
                 _mockGenericValidation.Object,
                 _mockGenericLambdaExpressions.Object,
-                _mockOrderCommandBusiness.Object
+                _mockOrderCommandBusiness.Object,
+                _mockUnitOfWork.Object, 
+                _mockLogger.Object
+
             );
 
             _mockCustomerValidation.Setup(v => v.InvokeAsync(It.IsAny<Customer>(), It.IsAny<BusinessSetOperation>()))
@@ -62,14 +64,14 @@ namespace business.validata.test
         public void Constructor_ThrowsArgumentNullException_IfValidationIsNull()
         {
             Assert.Throws<ArgumentNullException>(() => new CustomerCommandBusiness(
-                null!, _mockRepository.Object, _mockGenericValidation.Object, _mockGenericLambdaExpressions.Object, _mockOrderCommandBusiness.Object));
+                null!, _mockRepository.Object, _mockGenericValidation.Object, _mockGenericLambdaExpressions.Object, _mockOrderCommandBusiness.Object, _mockUnitOfWork.Object, _mockLogger.Object));
         }
 
         [Fact]
         public void Constructor_ThrowsArgumentNullException_IfOrderCommandBusinessIsNull()
         {
             Assert.Throws<ArgumentNullException>(() => new CustomerCommandBusiness(
-                _mockCustomerValidation.Object, _mockRepository.Object, _mockGenericValidation.Object, _mockGenericLambdaExpressions.Object, null!));
+                _mockCustomerValidation.Object, _mockRepository.Object, _mockGenericValidation.Object, _mockGenericLambdaExpressions.Object, null!, _mockUnitOfWork.Object, _mockLogger.Object));
         }
 
         [Fact]
@@ -85,7 +87,7 @@ namespace business.validata.test
 
             Assert.False(result.Success);
             Assert.Contains("Name is required", result.Validations);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
             _mockRepository.Verify(r => r.AddAsync(It.IsAny<Customer>()), Times.Never);
             _mockRepository.Verify(r => r.UpdateAsync(It.IsAny<Expression<Func<Customer, bool>>>(), It.IsAny<List<Action<Customer>>>()), Times.Never);
         }
@@ -108,8 +110,8 @@ namespace business.validata.test
 
             Assert.True(result.Success);
             Assert.Empty(result.Validations);
-            Assert.NotNull(result.Result);
-            Assert.Equal(1, result.Result!.CustomerId);
+            Assert.NotNull(result.Data);
+            Assert.Equal(1, result.Data!.CustomerId);
 
             _mockRepository.Verify(r => r.UpdateAsync(
                 It.Is<Expression<Func<Customer, bool>>>(exp => exp.Compile().Invoke(new Customer { CustomerId = 1 })),
@@ -133,7 +135,7 @@ namespace business.validata.test
 
             Assert.False(result.Success);
             Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
         }
 
         [Fact]

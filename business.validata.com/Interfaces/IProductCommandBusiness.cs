@@ -4,8 +4,9 @@ using model.validata.com.Enumeration;
 using model.validata.com.Product;
 namespace business.validata.com.Interfaces
 {
-    public interface IProductCommandBusiness : IAbstractCommandBusiness<Product>
+    public interface IProductCommandBusiness
     {
         Task<CommandResult<ProductModel>> InvokeAsync(Product Product, BusinessSetOperation businessSetOperation);
+        Task<CommandResult<Product>> DeleteAsync(int id);
     }
 }

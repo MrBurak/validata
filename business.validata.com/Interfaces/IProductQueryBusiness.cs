@@ -6,7 +6,7 @@ namespace business.validata.com.Interfaces
 {
     public interface IProductQueryBusiness
     {
-        Task<QueryResult<IEnumerable<ProductModel>>> ListAsync();
+        Task<QueryResult<IEnumerable<ProductModel>>> ListAsync(PaginationRequest paginationRequest);
 
         Task<QueryResult<ProductModel?>> GetAsync(int id);
     }

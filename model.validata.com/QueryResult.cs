@@ -2,7 +2,7 @@
 {
     public class QueryResult<T>
     {
-        public T? Result { get; set; }
+        public T? Data { get; set; }
         public bool Success { get; set; }
         public string? Exception { get; set; }
 

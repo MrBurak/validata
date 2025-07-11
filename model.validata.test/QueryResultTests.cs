@@ -8,7 +8,7 @@ namespace model.validata.test
         {
             var queryResult = new QueryResult<string>();
 
-            Assert.Null(queryResult.Result);
+            Assert.Null(queryResult.Data);
             Assert.False(queryResult.Success);
             Assert.Null(queryResult.Exception);
         }
@@ -19,10 +19,10 @@ namespace model.validata.test
             var expectedResult = "Some data";
             var queryResult = new QueryResult<string>
             {
-                Result = expectedResult
+                Data = expectedResult
             };
 
-            Assert.Equal(expectedResult, queryResult.Result);
+            Assert.Equal(expectedResult, queryResult.Data);
         }
 
         [Fact]
@@ -31,10 +31,10 @@ namespace model.validata.test
             var expectedResult = 123;
             var queryResult = new QueryResult<int>
             {
-                Result = expectedResult
+                Data = expectedResult
             };
 
-            Assert.Equal(expectedResult, queryResult.Result);
+            Assert.Equal(expectedResult, queryResult.Data);
         }
 
         [Fact]
@@ -72,14 +72,14 @@ namespace model.validata.test
             var product = new Product { ProductId = 1, Name = "Test Product", Price = 10.50m };
             var queryResult = new QueryResult<Product>
             {
-                Result = product,
+                Data = product,
                 Success = true,
                 Exception = null
             };
 
-            Assert.NotNull(queryResult.Result);
-            Assert.Equal(1, queryResult.Result!.ProductId);
-            Assert.Equal("Test Product", queryResult.Result.Name);
+            Assert.NotNull(queryResult.Data);
+            Assert.Equal(1, queryResult.Data!.ProductId);
+            Assert.Equal("Test Product", queryResult.Data.Name);
             Assert.True(queryResult.Success);
             Assert.Null(queryResult.Exception);
         }

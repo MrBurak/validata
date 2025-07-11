@@ -3,6 +3,7 @@ using System.Diagnostics.CodeAnalysis;
 using data.validata.com.Interfaces.Repository;
 using data.validata.com.Entities;
 using data.validata.com.Context;
+using model.validata.com;
 
 
 namespace data.validata.com.Repositories
@@ -29,14 +30,25 @@ namespace data.validata.com.Repositories
             }
         }
 
-        public async Task<IEnumerable<Order>> GetAllAsync(int customerId)
+        public async Task<IEnumerable<Order>> GetAllAsync(int customerId, PaginationRequest paginationRequest)
         {
-            var sql = $"SELECT * FROM {defaultSchema}.[Order] WHERE DeletedOn is null and CustomerId = @CustomerId";
+            
+
+            var sql = $@"
+            SELECT * FROM {defaultSchema}.[Order]
+            WHERE DeletedOn IS NULL AND CustomerId = @CustomerId
+            ORDER BY OrderId
+            OFFSET @Offset ROWS FETCH NEXT @PageSize ROWS ONLY";
             using (var connection = this.context.CreateConnection())
             {
-                return await connection.QueryAsync<Order>(sql, new { CustomerId = customerId });
+                var parameters = new DynamicParameters();
+                parameters.Add("@CustomerId", customerId);
+                parameters.Add("@Offset", paginationRequest.offset);
+                parameters.Add("@PageSize", paginationRequest.pageSize);
+                return await connection.QueryAsync<Order>(sql, parameters);
             }
         }
+        
 
 
 

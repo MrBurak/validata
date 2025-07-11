@@ -2,8 +2,10 @@
 using business.validata.com.Interfaces.Validators;
 using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using Microsoft.Extensions.Logging;
 using model.validata.com.Validators;
 using Moq;
+using test.utils;
 
 namespace business.validata.test
 {
@@ -13,6 +15,7 @@ namespace business.validata.test
         private readonly Mock<IOrderItemRepository> _mockOrderItemRepository;
         private readonly Mock<IProductRepository> _mockProductRepository;
         private readonly Mock<IGenericValidation<Customer>> _mockGenericValidationCustomer;
+        private readonly Mock<ILogger<OrderQueryBusiness>> _mockLogger = new();
         private readonly OrderQueryBusiness _orderQueryBusiness;
 
         public OrderQueryBusinessTests()
@@ -26,7 +29,8 @@ namespace business.validata.test
                 _mockOrderRepository.Object,
                 _mockOrderItemRepository.Object,
                 _mockProductRepository.Object,
-                _mockGenericValidationCustomer.Object
+                _mockGenericValidationCustomer.Object,
+                _mockLogger.Object
             );
         }
 
@@ -34,7 +38,7 @@ namespace business.validata.test
         public void Constructor_ThrowsArgumentNullException_IfOrderRepositoryIsNull()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => new OrderQueryBusiness(
-                null!, _mockOrderItemRepository.Object, _mockProductRepository.Object, _mockGenericValidationCustomer.Object));
+                null!, _mockOrderItemRepository.Object, _mockProductRepository.Object, _mockGenericValidationCustomer.Object, _mockLogger.Object));
            
             Assert.Equal("repository", ex.ParamName);
         }
@@ -43,7 +47,7 @@ namespace business.validata.test
         public void Constructor_ThrowsArgumentNullException_IfOrderItemRepositoryIsNull()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => new OrderQueryBusiness(
-                _mockOrderRepository.Object, null!, _mockProductRepository.Object, _mockGenericValidationCustomer.Object));
+                _mockOrderRepository.Object, null!, _mockProductRepository.Object, _mockGenericValidationCustomer.Object, _mockLogger.Object));
             
             Assert.Equal("repositoryItem", ex.ParamName);
         }
@@ -52,7 +56,7 @@ namespace business.validata.test
         public void Constructor_ThrowsArgumentNullException_IfProductRepositoryIsNull()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => new OrderQueryBusiness(
-                _mockOrderRepository.Object, _mockOrderItemRepository.Object, null!, _mockGenericValidationCustomer.Object));
+                _mockOrderRepository.Object, _mockOrderItemRepository.Object, null!, _mockGenericValidationCustomer.Object, _mockLogger.Object));
            
             Assert.Equal("repositoryProduct", ex.ParamName);
         }
@@ -61,7 +65,7 @@ namespace business.validata.test
         public void Constructor_ThrowsArgumentNullException_IfGenericValidationCustomerIsNull()
         {
             var ex = Assert.Throws<ArgumentNullException>(() => new OrderQueryBusiness(
-                _mockOrderRepository.Object, _mockOrderItemRepository.Object, _mockProductRepository.Object, null!));
+                _mockOrderRepository.Object, _mockOrderItemRepository.Object, _mockProductRepository.Object, null!, _mockLogger.Object));
            
             Assert.Equal("genericValidationCustomer", ex.ParamName);
         }
@@ -74,13 +78,13 @@ namespace business.validata.test
             _mockGenericValidationCustomer.Setup(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = null });
 
-            var result = await _orderQueryBusiness.ListAsync(customerId);
+            var result = await _orderQueryBusiness.ListAsync(customerId, PaginationUtil.paginationRequest);
 
             Assert.False(result.Success);
             Assert.Equal("Customer Not Found", result.Exception);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
             _mockGenericValidationCustomer.Verify(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get), Times.Once);
-            _mockOrderRepository.Verify(r => r.GetAllAsync(It.IsAny<int>()), Times.Never);
+            _mockOrderRepository.Verify(r => r.GetAllAsync(It.IsAny<int>(), PaginationUtil.paginationRequest), Times.Never);
         }
 
         [Fact]
@@ -96,17 +100,17 @@ namespace business.validata.test
 
             _mockGenericValidationCustomer.Setup(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
-            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId)).ReturnsAsync(orders);
+            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest)).ReturnsAsync(orders);
 
-            var result = await _orderQueryBusiness.ListAsync(customerId);
+            var result = await _orderQueryBusiness.ListAsync(customerId, PaginationUtil.paginationRequest);
 
             Assert.True(result.Success);
             Assert.Null(result.Exception);
-            Assert.NotNull(result.Result);
-            var orderViewModels = result.Result!.ToList();
+            Assert.NotNull(result.Data);
+            var orderViewModels = result.Data!.ToList();
             Assert.Equal(2, orderViewModels.Count);
             Assert.Equal(1, orderViewModels[0].OrderId);
-            _mockOrderRepository.Verify(r => r.GetAllAsync(customerId), Times.Once);
+            _mockOrderRepository.Verify(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest), Times.Once);
         }
 
         [Fact]
@@ -118,9 +122,9 @@ namespace business.validata.test
 
             _mockGenericValidationCustomer.Setup(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
-            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId)).ReturnsAsync(orders);
+            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest)).ReturnsAsync(orders);
 
-            var result = await _orderQueryBusiness.ListAsync(customerId);
+            var result = await _orderQueryBusiness.ListAsync(customerId, PaginationUtil.paginationRequest);
 
             Assert.False(result.Success);
             Assert.NotNull(result.Exception);
@@ -137,14 +141,14 @@ namespace business.validata.test
 
             _mockGenericValidationCustomer.Setup(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
-            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId)).ThrowsAsync(new Exception(expectedExceptionMessage));
+            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest)).ThrowsAsync(new Exception(expectedExceptionMessage));
 
-            var result = await _orderQueryBusiness.ListAsync(customerId);
+            var result = await _orderQueryBusiness.ListAsync(customerId, PaginationUtil.paginationRequest);
 
             Assert.False(result.Success);
             Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Result);
-            _mockOrderRepository.Verify(r => r.GetAllAsync(customerId), Times.Once);
+            Assert.Null(result.Data);
+            _mockOrderRepository.Verify(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest), Times.Once);
         }
 
         [Fact]
@@ -157,7 +161,7 @@ namespace business.validata.test
 
             Assert.False(result.Success);
             Assert.Equal("No record found", result.Exception);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
             _mockOrderRepository.Verify(r => r.GetByIdAsync(orderId, customerId), Times.Once);
             _mockOrderItemRepository.Verify(r => r.GetAllAsync(It.IsAny<int>()), Times.Never);
             _mockProductRepository.Verify(r => r.GetAllWithDeletedAsync(), Times.Never);
@@ -176,7 +180,7 @@ namespace business.validata.test
 
             Assert.False(result.Success);
             Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
             _mockOrderRepository.Verify(r => r.GetByIdAsync(orderId, customerId), Times.Once);
             _mockOrderItemRepository.Verify(r => r.GetAllAsync(It.IsAny<int>()), Times.Never);
             _mockProductRepository.Verify(r => r.GetAllWithDeletedAsync(), Times.Never);
@@ -198,9 +202,9 @@ namespace business.validata.test
 
             Assert.True(result.Success);
             Assert.Null(result.Exception);
-            Assert.NotNull(result.Result);
-            Assert.Equal(orderId, result.Result!.OrderId);
-            Assert.Empty(result.Result.Items);
+            Assert.NotNull(result.Data);
+            Assert.Equal(orderId, result.Data!.OrderId);
+            Assert.Empty(result.Data.Items);
             _mockOrderRepository.Verify(r => r.GetByIdAsync(orderId, customerId), Times.Once);
             _mockOrderItemRepository.Verify(r => r.GetAllAsync(customerId), Times.Once);
             _mockProductRepository.Verify(r => r.GetAllWithDeletedAsync(), Times.Once); 

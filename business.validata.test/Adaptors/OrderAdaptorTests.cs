@@ -4,6 +4,7 @@ using data.validata.com.Interfaces.Repository;
 using model.validata.com.Enumeration;
 using model.validata.com.Order;
 using Moq;
+using test.utils;
 
 
 namespace business.validata.test.Adaptors
@@ -36,7 +37,7 @@ namespace business.validata.test.Adaptors
                     new Product { ProductId = 1, Name = "Laptop", Price = 1000.0f },
                     new Product { ProductId = 2, Name = "Mouse", Price = 25.0f }
                 };
-            _mockProductRepository.Setup(repo => repo.GetAllAsync()).ReturnsAsync(products);
+            _mockProductRepository.Setup(repo => repo.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(products);
 
             var model = new OrderUpdateModel
             {
@@ -71,7 +72,7 @@ namespace business.validata.test.Adaptors
             Assert.Equal(25.0f, orderItem2.ProductPrice);
 
             Assert.Equal((2 * 1000.0f) + (1 * 25.0f), order.TotalAmount); 
-            _mockProductRepository.Verify(repo => repo.GetAllAsync(), Times.Once);
+            _mockProductRepository.Verify(repo => repo.GetAllAsync(PaginationUtil.paginationRequest), Times.Once);
         }
 
         [Fact]
@@ -83,7 +84,7 @@ namespace business.validata.test.Adaptors
             new Product { ProductId = 1, Name = "Laptop", Price = 1000.0f },
             new Product { ProductId = 3, Name = "Keyboard", Price = 75.0f }
         };
-            _mockProductRepository.Setup(repo => repo.GetAllAsync()).ReturnsAsync(products);
+            _mockProductRepository.Setup(repo => repo.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(products);
 
             var model = new OrderUpdateModel
             {
@@ -119,7 +120,7 @@ namespace business.validata.test.Adaptors
             Assert.Equal(75.0f, orderItem2.ProductPrice);
 
             Assert.Equal((1 * 1000.0f) + (3 * 75.0f), order.TotalAmount); 
-            _mockProductRepository.Verify(repo => repo.GetAllAsync(), Times.Once);
+            _mockProductRepository.Verify(repo => repo.GetAllAsync(PaginationUtil.paginationRequest), Times.Once);
         }
 
         [Fact]
@@ -130,7 +131,7 @@ namespace business.validata.test.Adaptors
         {
             new Product { ProductId = 1, Name = "Laptop", Price = 1000.0f }
         };
-            _mockProductRepository.Setup(repo => repo.GetAllAsync()).ReturnsAsync(products);
+            _mockProductRepository.Setup(repo => repo.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(products);
 
             var model = new OrderUpdateModel
             {
@@ -163,7 +164,7 @@ namespace business.validata.test.Adaptors
         public async Task Invoke_HandlesEmptyProductListFromRepository()
         {
             
-            _mockProductRepository.Setup(repo => repo.GetAllAsync()).ReturnsAsync(new List<Product>()); 
+            _mockProductRepository.Setup(repo => repo.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(new List<Product>()); 
 
             var model = new OrderUpdateModel
             {

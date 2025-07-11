@@ -5,6 +5,7 @@ using business.validata.com.Interfaces.Validators;
 using business.validata.com.Validators.Models;
 using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using Microsoft.Extensions.Logging;
 using model.validata.com.Enumeration;
 using model.validata.com.Order;
 using model.validata.com.Validators;
@@ -16,31 +17,27 @@ namespace business.validata.test
 {
     public class OrderCommandBusinessTests
     {
-        private readonly Mock<IOrderValidation> _mockOrderValidation;
-        private readonly Mock<ICommandRepository<Order>> _mockOrderRepository;
-        private readonly Mock<IGenericValidation<Order>> _mockGenericValidation;
-        private readonly Mock<IGenericLambdaExpressions> _mockGenericLambdaExpressions;
-        private readonly Mock<IOrderItemCommandBusiness> _mockOrderItemCommandBusiness;
-        private readonly Mock<IOrderAdaptor> _mockOrderAdaptor;
+        private readonly Mock<IOrderValidation> _mockOrderValidation=new();
+        private readonly Mock<ICommandRepository<Order>> _mockOrderRepository=new();
+        private readonly Mock<IGenericValidation<Order>> _mockGenericValidation=new();
+        private readonly Mock<IGenericLambdaExpressions> _mockGenericLambdaExpressions=new();
+        private readonly Mock<IUnitOfWork> _mockUnitOfWork=new();
+        private readonly Mock<IOrderAdaptor> _mockOrderAdaptor=new();
+        private readonly Mock<ILogger<OrderCommandBusiness>> _mockLogger = new();
         private readonly OrderCommandBusiness _orderCommandBusiness;
         private const float productPrice = 10f;
 
         public OrderCommandBusinessTests()
         {
-            _mockOrderValidation = new Mock<IOrderValidation>();
-            _mockOrderRepository = new Mock<ICommandRepository<Order>>();
-            _mockGenericValidation = new Mock<IGenericValidation<Order>>();
-            _mockGenericLambdaExpressions = new Mock<IGenericLambdaExpressions>();
-            _mockOrderItemCommandBusiness = new Mock<IOrderItemCommandBusiness>();
-            _mockOrderAdaptor = new Mock<IOrderAdaptor>();
 
             _orderCommandBusiness = new OrderCommandBusiness(
                 _mockOrderValidation.Object,
                 _mockOrderRepository.Object,
                 _mockGenericValidation.Object,
                 _mockGenericLambdaExpressions.Object,
-                _mockOrderItemCommandBusiness.Object,
-                _mockOrderAdaptor.Object
+                _mockUnitOfWork.Object,
+                _mockOrderAdaptor.Object,
+                _mockLogger.Object
             );
 
             
@@ -86,7 +83,7 @@ namespace business.validata.test
         {
             Assert.Throws<ArgumentNullException>(() => new OrderCommandBusiness(
                 null!, _mockOrderRepository.Object, _mockGenericValidation.Object,
-                _mockGenericLambdaExpressions.Object, _mockOrderItemCommandBusiness.Object, _mockOrderAdaptor.Object));
+                _mockGenericLambdaExpressions.Object, _mockUnitOfWork.Object, _mockOrderAdaptor.Object, _mockLogger.Object));
         }
 
         [Fact]
@@ -94,7 +91,7 @@ namespace business.validata.test
         {
             Assert.Throws<ArgumentNullException>(() => new OrderCommandBusiness(
                 _mockOrderValidation.Object, _mockOrderRepository.Object, _mockGenericValidation.Object,
-                null!, _mockOrderItemCommandBusiness.Object, _mockOrderAdaptor.Object));
+                null!, _mockUnitOfWork.Object, _mockOrderAdaptor.Object, _mockLogger.Object));
         }
 
         [Fact]
@@ -102,7 +99,7 @@ namespace business.validata.test
         {
             Assert.Throws<ArgumentNullException>(() => new OrderCommandBusiness(
                 _mockOrderValidation.Object, _mockOrderRepository.Object, _mockGenericValidation.Object,
-                _mockGenericLambdaExpressions.Object, _mockOrderItemCommandBusiness.Object, null!));
+                _mockGenericLambdaExpressions.Object, _mockUnitOfWork.Object, null!, _mockLogger.Object));
         }
 
         [Fact]
@@ -111,7 +108,7 @@ namespace business.validata.test
             Assert.Throws<ArgumentNullException>(() => new OrderCommandBusiness(
                 _mockOrderValidation.Object, 
                 _mockOrderRepository.Object, _mockGenericValidation.Object,
-                _mockGenericLambdaExpressions.Object, null!, _mockOrderAdaptor.Object));
+                _mockGenericLambdaExpressions.Object, null!, _mockOrderAdaptor.Object, _mockLogger.Object));
         }
 
         [Fact]
@@ -133,11 +130,11 @@ namespace business.validata.test
 
             Assert.False(result.Success);
             Assert.Contains("Invalid order", result.Validations);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
             _mockOrderAdaptor.Verify(a => a.Invoke(orderUpdateModel, BusinessSetOperation.Create), Times.Once);
             _mockOrderValidation.Verify(v => v.InvokeAsync(order, BusinessSetOperation.Create), Times.Once);
             _mockOrderRepository.Verify(r => r.AddAsync(It.IsAny<Order>()), Times.Never);
-            _mockOrderItemCommandBusiness.Verify(oicb => oicb.AddAsync(It.IsAny<Order>()), Times.Never);
+
         }
 
         [Fact]
@@ -179,22 +176,18 @@ namespace business.validata.test
                     Products = products
                 });
             _mockOrderRepository.Setup(r => r.AddAsync(validatedOrder)).ReturnsAsync(new Order { OrderId = 1, CustomerId = 1, OrderDate = DateTimeUtil.SystemTime, ProductCount = 2, TotalAmount = 20.00f });
-            _mockOrderItemCommandBusiness.Setup(oicb => oicb.AddAsync(It.IsAny<Order>()))
-                .ReturnsAsync(new List<OrderItem>
-                {
-                new OrderItem { OrderId = 1, ProductId = 1, Quantity = 2, ProductPrice = 10.00f }
-                });
+          
 
             var result = await _orderCommandBusiness.InvokeAsync(orderUpdateModel, BusinessSetOperation.Create);
 
             Assert.True(result.Success);
             Assert.Empty(result.Validations);
-            Assert.NotNull(result.Result);
-            Assert.Equal(1, result.Result!.OrderId);
-            Assert.Equal(2, result.Result.ProductCount);
-            Assert.Equal(20.00f, result.Result.TotalAmount);
-            Assert.Single(result.Result.Items);
-            Assert.Equal("Test Product", result.Result.Items.First().ProductName);
+            Assert.NotNull(result.Data);
+            Assert.Equal(1, result.Data!.OrderId);
+            Assert.Equal(2, result.Data.ProductCount);
+            Assert.Equal(20.00f, result.Data.TotalAmount);
+            Assert.Single(result.Data.Items);
+            Assert.Equal("Test Product", result.Data.Items.First().ProductName);
          
         }
 
@@ -238,29 +231,23 @@ namespace business.validata.test
                 });
             _mockOrderRepository.Setup(r => r.GetEntityAsync(It.IsAny<Expression<Func<Order, bool>>>()))
                 .ReturnsAsync(new Order { OrderId = 1, CustomerId = 1, OrderDate = DateTimeUtil.SystemTime, ProductCount = 3, TotalAmount = 36.00f });
-            _mockOrderItemCommandBusiness.Setup(oicb => oicb.AddAsync(It.IsAny<Order>()))
-                .ReturnsAsync(new List<OrderItem>
-                {
-                new OrderItem { OrderId = 1, ProductId = 1, Quantity = 3, ProductPrice = 12.00f }
-                });
-
+          
             var result = await _orderCommandBusiness.InvokeAsync(orderUpdateModel, BusinessSetOperation.Update);
 
             Assert.True(result.Success);
             Assert.Empty(result.Validations);
-            Assert.NotNull(result.Result);
-            Assert.Equal(1, result.Result!.OrderId);
-            Assert.Equal(3, result.Result.ProductCount);
-            Assert.Equal(36.00f, result.Result.TotalAmount);
-            Assert.Single(result.Result.Items);
-            Assert.Equal("Updated Product", result.Result.Items.First().ProductName);
+            Assert.NotNull(result.Data);
+            Assert.Equal(1, result.Data!.OrderId);
+            Assert.Equal(3, result.Data.ProductCount);
+            Assert.Equal(36.00f, result.Data.TotalAmount);
+            Assert.Single(result.Data.Items);
+            Assert.Equal("Updated Product", result.Data.Items.First().ProductName);
             _mockOrderAdaptor.Verify(a => a.Invoke(orderUpdateModel, BusinessSetOperation.Update), Times.Once);
             _mockOrderValidation.Verify(v => v.InvokeAsync(order, BusinessSetOperation.Update), Times.Once);
             _mockOrderRepository.Verify(r => r.UpdateAsync(
                 It.Is<Expression<Func<Order, bool>>>(exp => exp.Compile().Invoke(validatedOrder)),
                 It.IsAny<List<Action<Order>>>()), Times.Once);
             _mockOrderRepository.Verify(r => r.GetEntityAsync(It.IsAny<Expression<Func<Order, bool>>>()), Times.Once);
-            _mockOrderItemCommandBusiness.Verify(oicb => oicb.AddAsync(It.Is<Order>(o => o.OrderId == 1)), Times.Once);
         }
 
         [Fact]
@@ -289,9 +276,9 @@ namespace business.validata.test
 
             Assert.False(result.Success);
             Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Result);
+            Assert.Null(result.Data);
             _mockOrderRepository.Verify(r => r.UpdateAsync(It.IsAny<Expression<Func<Order, bool>>>(), It.IsAny<List<Action<Order>>>()), Times.Once);
-            _mockOrderItemCommandBusiness.Verify(oicb => oicb.AddAsync(It.IsAny<Order>()), Times.Never);
+   
         }
 
         [Fact]
@@ -308,8 +295,7 @@ namespace business.validata.test
                 It.IsAny<Expression<Func<Order, bool>>>(),
                 It.IsAny<List<Action<Order>>>()))
                 .Returns(Task.CompletedTask);
-            _mockOrderItemCommandBusiness.Setup(oicb => oicb.DeleteAllAsync(orderIdToDelete))
-                .Returns(Task.CompletedTask);
+
 
             var result = await _orderCommandBusiness.DeleteAsync(orderIdToDelete);
 
@@ -319,7 +305,6 @@ namespace business.validata.test
             _mockOrderRepository.Verify(r => r.UpdateAsync(
                 It.Is<Expression<Func<Order, bool>>>(exp => exp.Compile().Invoke(orderToDelete)),
                 It.IsAny<List<Action<Order>>>()), Times.Once);
-            _mockOrderItemCommandBusiness.Verify(oicb => oicb.DeleteAllAsync(orderIdToDelete), Times.Once);
         }
 
         [Fact]
@@ -338,7 +323,6 @@ namespace business.validata.test
             _mockOrderRepository.Verify(r => r.UpdateAsync(
                 It.IsAny<Expression<Func<Order, bool>>>(),
                 It.IsAny<List<Action<Order>>>()), Times.Never);
-            _mockOrderItemCommandBusiness.Verify(oicb => oicb.DeleteAllAsync(It.IsAny<int>()), Times.Once);
         }
 
         [Fact]
@@ -357,15 +341,13 @@ namespace business.validata.test
                 It.IsAny<Expression<Func<Order, bool>>>(),
                 It.IsAny<List<Action<Order>>>()))
                 .Returns(Task.CompletedTask);
-            _mockOrderItemCommandBusiness.Setup(oicb => oicb.DeleteAllForCustomerAsync(customerId))
-                .Returns(Task.CompletedTask);
+
 
             await _orderCommandBusiness.DeleteAllAsync(customerId);
 
             _mockOrderRepository.Verify(r => r.UpdateAsync(
                 It.Is<Expression<Func<Order, bool>>>(exp => exp.Compile().Invoke(new Order { CustomerId = customerId, DeletedOn = null })),
                 It.IsAny<List<Action<Order>>>()), Times.Once);
-            _mockOrderItemCommandBusiness.Verify(oicb => oicb.DeleteAllForCustomerAsync(customerId), Times.Once);
         }
     }
 }

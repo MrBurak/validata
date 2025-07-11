@@ -22,6 +22,7 @@
     <ProjectReference Include="..\business.validata.com\business.validata.com.csproj" />
     <ProjectReference Include="..\data.validata.com\data.validata.com.csproj" />
     <ProjectReference Include="..\model.validata.com\model.validata.com.csproj" />
+    <ProjectReference Include="..\test.utils\test.utils.csproj" />
     <ProjectReference Include="..\util.validata.com\util.validata.com.csproj" />
   </ItemGroup>
 

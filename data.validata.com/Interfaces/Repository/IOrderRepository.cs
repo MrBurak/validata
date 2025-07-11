@@ -1,4 +1,5 @@
 ﻿using data.validata.com.Entities;
+using model.validata.com;
 
 
 namespace data.validata.com.Interfaces.Repository
@@ -7,6 +8,6 @@ namespace data.validata.com.Interfaces.Repository
     {
         Task<Order?> GetByIdAsync(int orderId, int customerId);
 
-        Task<IEnumerable<Order>> GetAllAsync(int customerId);
+        Task<IEnumerable<Order>> GetAllAsync(int customerId, PaginationRequest paginationRequest);
     }
 }

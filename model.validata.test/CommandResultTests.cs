@@ -34,12 +34,12 @@ namespace model.validata.test
         {
             var commandResult = new CommandResult<bool>
             {
-                Result = true,
+                Data = true,
                 Success = true,
                 Exception = "No exception"
             };
 
-            Assert.True(commandResult.Result);
+            Assert.True(commandResult.Data);
             Assert.True(commandResult.Success);
             Assert.Equal("No exception", commandResult.Exception);
         }
@@ -50,14 +50,14 @@ namespace model.validata.test
             var product = new Product { ProductId = 1, Name = "Test Product" };
             var commandResult = new CommandResult<Product>
             {
-                Result = product,
+                Data = product,
                 Success = false,
                 Exception = "Validation failed.",
                 Validations = { "Name must be unique.", "Price cannot be zero." }
             };
 
-            Assert.NotNull(commandResult.Result);
-            Assert.Equal(1, commandResult.Result!.ProductId);
+            Assert.NotNull(commandResult.Data);
+            Assert.Equal(1, commandResult.Data!.ProductId);
             Assert.False(commandResult.Success);
             Assert.Equal("Validation failed.", commandResult.Exception);
             Assert.Equal(2, commandResult.Validations.Count);
