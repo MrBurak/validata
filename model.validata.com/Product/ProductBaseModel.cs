@@ -11,6 +11,6 @@ namespace model.validata.com.Product
         public string? Name { get; set; }
         [Required]
         [Range(0, float.MaxValue)]
-        public float Price { get; set; }
+        public decimal Price { get; set; }
     }
 }

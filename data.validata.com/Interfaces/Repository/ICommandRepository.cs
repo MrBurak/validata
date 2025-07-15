@@ -11,7 +11,7 @@ namespace data.validata.com.Interfaces.Repository
         Task<T?> GetEntityAsync(Expression<Func<T, bool>> query);
         Task UpdateAsync(Expression<Func<T, bool>> filterExpression, List<Action<T>> properties);
         Task<T> AddAsync(T entity);
-        Task<bool> DeleteAsync(Expression<Func<T, bool>> query);
+        Task DeleteAsync(Expression<Func<T, bool>> query);
 
     }
 }

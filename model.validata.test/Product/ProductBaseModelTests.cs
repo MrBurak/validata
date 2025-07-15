@@ -19,7 +19,7 @@ namespace model.validata.test.Product
             var model = new ProductBaseModel
             {
                 Name = "Laptop",
-                Price = 1200.50f
+                Price = 1200.50m
             };
 
             var errors = ValidateModel(model);
@@ -33,7 +33,7 @@ namespace model.validata.test.Product
             var model = new ProductBaseModel
             {
                 Name = null, 
-                Price = 50.0f
+                Price = 50.0m
             };
 
             var errors = ValidateModel(model);
@@ -48,7 +48,7 @@ namespace model.validata.test.Product
             var model = new ProductBaseModel
             {
                 Name = new string('A', 129), 
-                Price = 50.0f
+                Price = 50.0m
             };
 
             var errors = ValidateModel(model);
@@ -65,7 +65,7 @@ namespace model.validata.test.Product
             {
                 Name = "Valid Product",
               
-                Price = 0.0f 
+                Price = 0.0m 
             };
 
             var errors = ValidateModel(model);
@@ -80,7 +80,7 @@ namespace model.validata.test.Product
             var model = new ProductBaseModel
             {
                 Name = "Product with negative price",
-                Price = -10.50f 
+                Price = -10.50m 
             };
 
             var errors = ValidateModel(model);
@@ -94,7 +94,7 @@ namespace model.validata.test.Product
             var model = new ProductBaseModel
             {
                 Name = "Free Product",
-                Price = 0.0f 
+                Price = 0.0m 
             };
 
             var errors = ValidateModel(model);
@@ -108,7 +108,7 @@ namespace model.validata.test.Product
             var model = new ProductBaseModel
             {
                 Name = "Very Expensive Product",
-                Price = float.MaxValue 
+                Price = decimal.MaxValue 
             };
 
             var errors = ValidateModel(model);
@@ -122,7 +122,7 @@ namespace model.validata.test.Product
             var model = new ProductBaseModel
             {
                 Name = new string('X', 150), 
-                Price = -5.0f 
+                Price = -5.0m 
             };
 
             var errors = ValidateModel(model);

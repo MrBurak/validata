@@ -1,9 +1,8 @@
 ﻿using business.validata.com.Interfaces.Utils;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using data.validata.com.Interfaces.Metadata;
 using System.Linq.Expressions;
 using System.Reflection;
-using util.validata.com;
 
 
 namespace business.validata.com.Utils
@@ -17,8 +16,6 @@ namespace business.validata.com.Utils
             this.metadata = metadata;
 
         }
-
-        
 
         public Expression<Func<TEntity, bool>> GetEntityByPrimaryKey<TEntity>(TEntity entity)
         {
@@ -51,27 +48,7 @@ namespace business.validata.com.Utils
             return Expression.Lambda<Func<TEntity, bool>>(filterBinaryExpression, parameterExpression);
         }
 
-        public Expression<Func<TEntity, bool>> GetEntityByUniqueValue<TEntity>(TEntity entity, string fieldName, string value, List<int> ids)
-        {
-
-            IProperty pkProperty = this.metadata.Entities[typeof(TEntity)].PrimaryKey;
-
-            ParameterExpression parameterExpression = Expression.Parameter(typeof(TEntity), "e");
-
-            BinaryExpression binaryExpression = EqualExpression(parameterExpression, fieldName, value, GetFieldTypeByName<TEntity>(fieldName));
-
-            BinaryExpression deletedOnBinaryExpression = DeletedOnBinaryExpression(parameterExpression);
-
-            BinaryExpression filterBinaryExpression = Expression.And(binaryExpression, deletedOnBinaryExpression);
-
-
-
-            Expression<Func<TEntity, bool>> filterLambda = Expression.Lambda<Func<TEntity, bool>>(filterBinaryExpression, parameterExpression);
-
-            Expression<Func<TEntity, bool>> notContains = ObjectUtil.NotContainsLambdaExpression<TEntity>(ids, pkProperty.PropertyInfo.Name);
-
-            return ObjectUtil.ConcatLambdaExpression(filterLambda, notContains);
-        }
+        
 
         private BinaryExpression DeletedOnBinaryExpression(Expression parameterExpression)
         {
@@ -84,7 +61,6 @@ namespace business.validata.com.Utils
             MemberExpression memberExpression = Expression.Property(parameterExpression, fieldname);
             if (memberExpression.Member is PropertyInfo && Nullable.GetUnderlyingType(type) == null && type.IsValueType)
             {
-                // type is non nullable
                 var nonNullableValue = value != null ? Convert.ChangeType(value, type) : GetDefaultValue(type);
 
                 return Expression.Equal(memberExpression, Expression.Constant(nonNullableValue, type));
@@ -104,7 +80,6 @@ namespace business.validata.com.Utils
 
                 if (Nullable.GetUnderlyingType(type) == null && type.IsValueType)
                 {
-                    // type is non nullable
                     var nonNullableValue = value != null ? Convert.ChangeType(value, type) : default(T);
 
                     return Expression.NotEqual(memberExpression, Expression.Constant(nonNullableValue, type));

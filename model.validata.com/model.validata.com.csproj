@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\util.validata.com\util.validata.com.csproj" />
+  </ItemGroup>
+
 </Project>

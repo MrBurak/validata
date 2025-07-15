@@ -2,177 +2,247 @@
 using business.validata.com.Interfaces;
 using business.validata.com.Interfaces.Utils;
 using business.validata.com.Interfaces.Validators;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using Microsoft.Extensions.Logging;
-using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
 using Moq;
 using System.Linq.Expressions;
+using business.validata.com.Interfaces.Adaptors;
+using model.validata.com.ValueObjects.Customer;
+using model.validata.com.DTO;
+using FluentAssertions;
+using business.validata.com.Validators;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Model;
 
 namespace business.validata.test
 {
+    
+
     public class CustomerCommandBusinessTests
     {
-        private readonly Mock<ICustomerValidation> _mockCustomerValidation=new();
-        private readonly Mock<ICommandRepository<Customer>> _mockRepository=new();
-        private readonly Mock<IGenericValidation<Customer>> _mockGenericValidation = new();
-        private readonly Mock<IGenericLambdaExpressions> _mockGenericLambdaExpressions = new();
-        private readonly Mock<IOrderCommandBusiness> _mockOrderCommandBusiness = new();
-        private readonly Mock<IUnitOfWork> _mockUnitOfWork= new();
-        private readonly Mock<ILogger<CustomerCommandBusiness>> _mockLogger = new();
-        private readonly CustomerCommandBusiness _customerCommandBusiness;
+        private readonly Mock<ICustomerValidation> validationMock = new();
+        private readonly Mock<ICommandRepository<Customer>> customerRepoMock = new();
+        private readonly Mock<IUnitOfWork> unitOfWorkMock = new();
+        private readonly Mock<IGenericLambdaExpressions> lambdaMock = new();
+        private readonly Mock<IGenericValidation<Customer>> genericValidationMock = new();
+        private readonly Mock<IOrderCommandBusiness> orderCommandMock = new();
+        private readonly Mock<ICustomerAdaptor> adaptorMock = new();
+        private readonly Mock<ILogger<CustomerCommandBusiness>> loggerMock = new();
+
+        private readonly CustomerCommandBusiness sut;
 
         public CustomerCommandBusinessTests()
         {
-            
+            unitOfWorkMock.SetupGet(u => u.customers).Returns(customerRepoMock.Object);
 
-            _customerCommandBusiness = new CustomerCommandBusiness(
-                _mockCustomerValidation.Object,
-                _mockRepository.Object,
-                _mockGenericValidation.Object,
-                _mockGenericLambdaExpressions.Object,
-                _mockOrderCommandBusiness.Object,
-                _mockUnitOfWork.Object, 
-                _mockLogger.Object
-
+            sut = new CustomerCommandBusiness(
+                validationMock.Object,
+                customerRepoMock.Object,
+                genericValidationMock.Object,
+                lambdaMock.Object,
+                orderCommandMock.Object,
+                unitOfWorkMock.Object,
+                loggerMock.Object,
+                adaptorMock.Object
             );
-
-            _mockCustomerValidation.Setup(v => v.InvokeAsync(It.IsAny<Customer>(), It.IsAny<BusinessSetOperation>()))
-                .ReturnsAsync(new ValidationResult<Customer> { Entity = new Customer { CustomerId = 1, FirstName = "John", LastName = "Doe" } });
-
-            _mockRepository.Setup(r => r.AddAsync(It.IsAny<Customer>()))
-                .ReturnsAsync(new Customer { CustomerId = 1, FirstName = "John", LastName = "Doe", Address = "123 Main St", Pobox = "PO Box 1" });
-            _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Expression<Func<Customer, bool>>>(), It.IsAny<List<Action<Customer>>>()))
-                .Returns(Task.CompletedTask);
-            _mockRepository.Setup(r => r.GetEntityAsync(It.IsAny<Expression<Func<Customer, bool>>>()))
-                .ReturnsAsync(new Customer { CustomerId = 1, FirstName = "John", LastName = "Doe", Address = "123 Main St", Pobox = "PO Box 1" });
-
-            _mockGenericValidation.Setup(gv => gv.Exists(It.IsAny<int>(), It.IsAny<BusinessSetOperation>()))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = new Customer { CustomerId = 1 } });
-
-            _mockGenericLambdaExpressions.Setup(gle => gle.GetEntityById<Customer>(It.IsAny<int>()))
-                .Returns<int>(id => c => c.CustomerId == id);
-            _mockGenericLambdaExpressions.Setup(gle => gle.GetEntityByPrimaryKey(It.IsAny<Customer>()))
-                .Returns<Customer>(c => cust => cust.CustomerId == c.CustomerId);
-
-            _mockOrderCommandBusiness.Setup(ocb => ocb.DeleteAllAsync(It.IsAny<int>())).Returns(Task.FromResult(new CommandResult<List<Order>> { Success = true }));
+        }
+        [Fact]
+        public void Constructor_Throws_IfValidationNull()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerCommandBusiness(null!, customerRepoMock.Object, genericValidationMock.Object, lambdaMock.Object,
+                                            orderCommandMock.Object, unitOfWorkMock.Object, loggerMock.Object, adaptorMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfValidationIsNull()
+        public void Constructor_Throws_IfRepositoryNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new CustomerCommandBusiness(
-                null!, _mockRepository.Object, _mockGenericValidation.Object, _mockGenericLambdaExpressions.Object, _mockOrderCommandBusiness.Object, _mockUnitOfWork.Object, _mockLogger.Object));
+            Assert.Throws<ArgumentNullException>(() =>
+            new CustomerCommandBusiness(validationMock.Object, null!, genericValidationMock.Object, lambdaMock.Object,
+                                            orderCommandMock.Object, unitOfWorkMock.Object, loggerMock.Object, adaptorMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfOrderCommandBusinessIsNull()
+        public void Constructor_Throws_IfGenericValidationNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new CustomerCommandBusiness(
-                _mockCustomerValidation.Object, _mockRepository.Object, _mockGenericValidation.Object, _mockGenericLambdaExpressions.Object, null!, _mockUnitOfWork.Object, _mockLogger.Object));
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerCommandBusiness(validationMock.Object, customerRepoMock.Object, null!, lambdaMock.Object,
+                                            orderCommandMock.Object, unitOfWorkMock.Object, loggerMock.Object, adaptorMock.Object));
         }
 
         [Fact]
-        public async Task InvokeAsync_ValidationFails_ReturnsErrors()
+        public void Constructor_Throws_IfLambdaNull()
         {
-            var err = new ValidationResult<Customer>();
-            err.AddError("Name is required");
+            Assert.Throws<ArgumentNullException>(() =>
+            new CustomerCommandBusiness(validationMock.Object, customerRepoMock.Object, genericValidationMock.Object, null!,
+                                            orderCommandMock.Object, unitOfWorkMock.Object, loggerMock.Object, adaptorMock.Object));
+        }
+
+        [Fact]
+        public void Constructor_Throws_IfOrderCommandBusinessNull()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            new CustomerCommandBusiness(validationMock.Object, customerRepoMock.Object, genericValidationMock.Object, lambdaMock.Object,
+                                            null!, unitOfWorkMock.Object, loggerMock.Object, adaptorMock.Object));
+        }
+
+        [Fact]
+        public void Constructor_Throws_IfUnitOfWorkNull()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            new CustomerCommandBusiness(validationMock.Object, customerRepoMock.Object, genericValidationMock.Object, lambdaMock.Object,
+                                            orderCommandMock.Object, null!, loggerMock.Object, adaptorMock.Object));
+        }
+
+        [Fact]
+        public void Constructor_Throws_IfLoggerNull()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            new CustomerCommandBusiness(validationMock.Object, customerRepoMock.Object, genericValidationMock.Object, lambdaMock.Object,
+                                            orderCommandMock.Object, unitOfWorkMock.Object, null!, adaptorMock.Object));
+        }
+
+        [Fact]
+        public void Constructor_Throws_IfAdaptorNull()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+            new CustomerCommandBusiness(validationMock.Object, customerRepoMock.Object, genericValidationMock.Object, lambdaMock.Object,
+                                            orderCommandMock.Object, unitOfWorkMock.Object, loggerMock.Object, null!));
+        }
+
+        [Fact]
+        public void Constructor_Succeeds_WithValidDependencies()
+        {
+            var sut = new CustomerCommandBusiness(validationMock.Object, customerRepoMock.Object, genericValidationMock.Object, lambdaMock.Object,
+                                                  orderCommandMock.Object, unitOfWorkMock.Object, loggerMock.Object, adaptorMock.Object);
+
+            Assert.NotNull(sut);
+        }
+
+
+        [Fact]
+        public async Task InvokeAsync_ShouldCreateCustomer_WhenValid()
+        {
+            var customer = new Customer(0, new FirstName("John"), new LastName("Doe"), new EmailAddress("a@b.com"), new StreetAddress("a"), new PostalCode("a"));
+            var dto = new CustomerDto { CustomerId = 1 };
+            var vr = new ValidationResult<Customer>();
+            validationMock.Setup(v => v.InvokeAsync(customer, BusinessSetOperation.Create))
+                .ReturnsAsync(new ValidationResult<Customer>());
+
+            customerRepoMock.Setup(r => r.AddAsync(customer)).ReturnsAsync(customer);
+            adaptorMock.Setup(a => a.Invoke(customer)).Returns(dto);
+
+            var result = await sut.InvokeAsync(customer, BusinessSetOperation.Create);
+
+            result.Success.Should().BeTrue();
+            result.Data.Should().Be(dto);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldUpdateCustomer_WhenValid()
+        {
+            var customer = new Customer(42, new FirstName("John"), new LastName("Doe"), new EmailAddress("a@b.com"), new StreetAddress("a"), new PostalCode("a"));
+            var dto = new CustomerDto { CustomerId = 42 };
+            var id = 10;
+            Expression<Func<Customer, bool>> query = x => x.DeletedOn == null && x.CustomerId == 42;
+
+            validationMock.Setup(v => v.InvokeAsync(customer, BusinessSetOperation.Update))
+                .ReturnsAsync(new ValidationResult<Customer>());
+
+            lambdaMock.Setup(l => l.GetEntityByPrimaryKey(customer)).Returns(query);
+            customerRepoMock.Setup(r => r.GetEntityAsync(query)).ReturnsAsync(customer);
+            adaptorMock.Setup(a => a.Invoke(customer)).Returns(dto);
+
+            var result = await sut.InvokeAsync(customer, BusinessSetOperation.Update);
+
+            result.Success.Should().BeTrue();
+            result.Data.Should().Be(dto);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldReturnValidationErrors_WhenInvalid()
+        {
             var customer = new Customer();
-            _mockCustomerValidation.Setup(v => v.InvokeAsync(customer, BusinessSetOperation.Create))
-                .ReturnsAsync(err);
+            var validationResult = new ValidationResult<Customer>();
+            validationResult.Errors.Add("Name is required");
 
-            var result = await _customerCommandBusiness.InvokeAsync(customer, BusinessSetOperation.Create);
+            validationMock.Setup(v => v.InvokeAsync(customer, BusinessSetOperation.Create))
+                .ReturnsAsync(validationResult);
 
-            Assert.False(result.Success);
-            Assert.Contains("Name is required", result.Validations);
-            Assert.Null(result.Data);
-            _mockRepository.Verify(r => r.AddAsync(It.IsAny<Customer>()), Times.Never);
-            _mockRepository.Verify(r => r.UpdateAsync(It.IsAny<Expression<Func<Customer, bool>>>(), It.IsAny<List<Action<Customer>>>()), Times.Never);
-        }
+            var result = await sut.InvokeAsync(customer, BusinessSetOperation.Create);
 
-        
-
-        [Fact]
-        public async Task InvokeAsync_UpdateOperation_CallsUpdateAsyncAndReturnsSuccess()
-        {
-            var customer = new Customer { CustomerId = 1, FirstName = "Updated", LastName = "Customer" };
-            var validatedCustomer = new Customer { CustomerId = 1, FirstName = "Original", LastName = "Name" };
-            var updatedCustomerInDb = new Customer { CustomerId = 1, FirstName = "Updated", LastName = "Customer", Address = "456 Pine", Pobox = "PO2" };
-
-            _mockCustomerValidation.Setup(v => v.InvokeAsync(customer, BusinessSetOperation.Update))
-                .ReturnsAsync(new ValidationResult<Customer> { Entity = validatedCustomer });
-            _mockRepository.Setup(r => r.GetEntityAsync(It.IsAny<Expression<Func<Customer, bool>>>()))
-                .ReturnsAsync(updatedCustomerInDb);
-
-            var result = await _customerCommandBusiness.InvokeAsync(customer, BusinessSetOperation.Update);
-
-            Assert.True(result.Success);
-            Assert.Empty(result.Validations);
-            Assert.NotNull(result.Data);
-            Assert.Equal(1, result.Data!.CustomerId);
-
-            _mockRepository.Verify(r => r.UpdateAsync(
-                It.Is<Expression<Func<Customer, bool>>>(exp => exp.Compile().Invoke(new Customer { CustomerId = 1 })),
-                It.Is<List<Action<Customer>>>(list => list.Count == 1)), Times.Once);
-            _mockRepository.Verify(r => r.AddAsync(It.IsAny<Customer>()), Times.Never);
-        }
-
-
-        [Fact]
-        public async Task InvokeAsync_HandlesException_ReturnsFailure()
-        {
-            var customer = new Customer { CustomerId = 1, FirstName = "Error", LastName = "Customer" };
-            var expectedExceptionMessage = "Database connection lost";
-
-            _mockCustomerValidation.Setup(v => v.InvokeAsync(customer, BusinessSetOperation.Update))
-                .ReturnsAsync(new ValidationResult<Customer> { Entity = new Customer { CustomerId = 1 } });
-            _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Expression<Func<Customer, bool>>>(), It.IsAny<List<Action<Customer>>>()))
-                .ThrowsAsync(new Exception(expectedExceptionMessage));
-
-            var result = await _customerCommandBusiness.InvokeAsync(customer, BusinessSetOperation.Update);
-
-            Assert.False(result.Success);
-            Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Data);
+            result.Success.Should().BeFalse();
+            result.Validations.Should().Contain("Name is required");
         }
 
         [Fact]
-        public async Task DeleteAsync_CallsBaseDeleteAndOrderCommandBusinessDeleteAll()
+        public async Task InvokeAsync_ShouldHandleException()
         {
-            int customerIdToDelete = 1;
-            var baseDeleteResult = new CommandResult<Customer> { Success = true };
+            var customer = new Customer(0, new FirstName("John"), new LastName("Doe"), new EmailAddress("a@b.com"), new StreetAddress("a"), new PostalCode("a"));
 
-            _mockGenericValidation.Setup(gv => gv.Exists(customerIdToDelete, BusinessSetOperation.Delete))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = new Customer { CustomerId = customerIdToDelete } });
-            _mockRepository.Setup(r => r.UpdateAsync(It.IsAny<Expression<Func<Customer, bool>>>(), It.IsAny<List<Action<Customer>>>()))
-                .Returns(Task.CompletedTask);
 
-            var result = await _customerCommandBusiness.DeleteAsync(customerIdToDelete);
+            validationMock.Setup(v => v.InvokeAsync(customer, BusinessSetOperation.Create))
+                .ReturnsAsync(new ValidationResult<Customer>());
 
-            _mockRepository.Verify(r => r.UpdateAsync(
-                It.Is<Expression<Func<Customer, bool>>>(exp => exp.Compile().Invoke(new Customer { CustomerId = customerIdToDelete })),
-                It.IsAny<List<Action<Customer>>>()), Times.Once);
-            _mockOrderCommandBusiness.Verify(ocb => ocb.DeleteAllAsync(customerIdToDelete), Times.Once);
-            Assert.True(result.Success);
+            customerRepoMock.Setup(r => r.AddAsync(customer)).ThrowsAsync(new Exception("DB failure"));
+
+            var result = await sut.InvokeAsync(customer, BusinessSetOperation.Create);
+
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("DB failure");
         }
 
         [Fact]
-        public async Task DeleteAsync_BaseDeleteFails_DoesNotCallOrderCommandBusinessDeleteAll()
+        public async Task DeleteAsync_ShouldDeleteCustomer_WhenValid()
         {
-            int customerIdToDelete = 1;
-            var baseDeleteResult = new CommandResult<Customer> { Success = false, Validations = { "Customer not found" } };
+            var id = 10;
+            Expression<Func<Customer, bool>> query = x => x.DeletedOn == null && x.CustomerId == id;
 
-            _mockGenericValidation.Setup(gv => gv.Exists(customerIdToDelete, BusinessSetOperation.Delete))
+            genericValidationMock.Setup(v => v.Exists(id, BusinessSetOperation.Delete))
+                .ReturnsAsync((ExistsResult<Customer>?)null);
+
+            lambdaMock.Setup(l => l.GetEntityById<Customer>(id)).Returns(query);
+
+            var result = await sut.DeleteAsync(id);
+
+            result.Success.Should().BeTrue();
+
+            customerRepoMock.Verify(r => r.DeleteAsync(query), Times.Once);
+            orderCommandMock.Verify(o => o.DeleteAllAsync(id), Times.Once);
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldReturnValidationError_WhenInvalid()
+        {
+            var id = 10;
+
+            genericValidationMock.Setup(v => v.Exists(id, BusinessSetOperation.Delete))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = null });
 
-            var result = await _customerCommandBusiness.DeleteAsync(customerIdToDelete);
+            var result = await sut.DeleteAsync(id);
 
-            _mockRepository.Verify(r => r.UpdateAsync(It.IsAny<Expression<Func<Customer, bool>>>(), It.IsAny<List<Action<Customer>>>()), Times.Never);
-            _mockOrderCommandBusiness.Verify(ocb => ocb.DeleteAllAsync(It.IsAny<int>()), Times.Once);
-            Assert.False(result.Success);
+            result.Success.Should().BeFalse();
+            result.Validations.Should().Contain("No record found");
+        }
+
+        [Fact]
+        public async Task DeleteAsync_ShouldHandleException()
+        {
+            var id = 10;
+            Expression<Func<Customer, bool>> query = x=> x.DeletedOn==null && x.CustomerId==id;
+
+            genericValidationMock.Setup(v => v.Exists(id, BusinessSetOperation.Delete)).ReturnsAsync((ExistsResult<Customer>?)null);
+            lambdaMock.Setup(l => l.GetEntityById<Customer>(id)).Returns(query);
+            customerRepoMock.Setup(r => r.DeleteAsync(query)).ThrowsAsync(new Exception("Delete failed"));
+
+            var result = await sut.DeleteAsync(id);
+
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("Delete failed");
         }
     }
+
 }
 

@@ -19,14 +19,14 @@ namespace model.validata.test.Order
             var model = new OrderItemViewModel
             {
                 Quantity = 5,
-                ProductPrice = 10.50f,
+                ProductPrice = 10.50m,
                 ProductName = "Test Product"
             };
 
             Assert.Equal(5, model.Quantity);
-            Assert.Equal(10.50f, model.ProductPrice);
+            Assert.Equal(10.50m, model.ProductPrice);
             Assert.Equal("Test Product", model.ProductName);
-            Assert.Equal(5 * 10.50f, model.TotalAmount); 
+            Assert.Equal(5 * 10.50m, model.TotalAmount); 
         }
 
         [Fact]
@@ -39,8 +39,8 @@ namespace model.validata.test.Order
         [Fact]
         public void OrderItemViewModel_ProductPrice_CanBeSetAndGet()
         {
-            var model = new OrderItemViewModel { ProductPrice = 25.75f };
-            Assert.Equal(25.75f, model.ProductPrice);
+            var model = new OrderItemViewModel { ProductPrice = 25.75m };
+            Assert.Equal(25.75m, model.ProductPrice);
         }
 
         [Fact]
@@ -56,9 +56,9 @@ namespace model.validata.test.Order
             var model = new OrderItemViewModel
             {
                 Quantity = 0,
-                ProductPrice = 100.0f
+                ProductPrice = 100.0m
             };
-            Assert.Equal(0.0f, model.TotalAmount);
+            Assert.Equal(0.0m, model.TotalAmount);
         }
 
         [Fact]
@@ -67,9 +67,9 @@ namespace model.validata.test.Order
             var model = new OrderItemViewModel
             {
                 Quantity = 5,
-                ProductPrice = 0.0f
+                ProductPrice = 0.0m
             };
-            Assert.Equal(0.0f, model.TotalAmount);
+            Assert.Equal(0.0m, model.TotalAmount);
         }
 
         [Fact]
@@ -78,9 +78,9 @@ namespace model.validata.test.Order
            var model = new OrderItemViewModel
             {
                 Quantity = -2,
-                ProductPrice = 15.0f
+                ProductPrice = 15.0m
             };
-            Assert.Equal(-30.0f, model.TotalAmount);
+            Assert.Equal(-30.0m, model.TotalAmount);
         }
 
         [Fact]
@@ -89,9 +89,9 @@ namespace model.validata.test.Order
             var model = new OrderItemViewModel
             {
                 Quantity = 3,
-                ProductPrice = -5.0f
+                ProductPrice = -5.0m
             };
-            Assert.Equal(-15.0f, model.TotalAmount);
+            Assert.Equal(-15.0m, model.TotalAmount);
         }
 
         [Fact]
@@ -100,10 +100,10 @@ namespace model.validata.test.Order
             var model = new OrderItemViewModel
             {
                 Quantity = 3,
-                ProductPrice = 0.1f
+                ProductPrice = 0.1m
             };
            
-            Assert.Equal(0.3f, model.TotalAmount, 5); 
+            Assert.Equal(0.3m, model.TotalAmount, 5); 
         }
 
         [Fact]
@@ -112,7 +112,7 @@ namespace model.validata.test.Order
             var model = new OrderItemViewModel
             {
                 Quantity = 1,
-                ProductPrice = 1.0f,
+                ProductPrice = 1.0m,
                 ProductName = "Anything"
             };
             var errors = ValidateModel(model);

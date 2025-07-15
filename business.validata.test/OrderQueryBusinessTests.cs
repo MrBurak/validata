@@ -1,218 +1,260 @@
 ﻿using business.validata.com;
+using business.validata.com.Interfaces.Adaptors;
 using business.validata.com.Interfaces.Validators;
-using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using model.validata.com;
+using model.validata.com.DTO;
+using model.validata.com.Entities;
+using model.validata.com.Order;
 using model.validata.com.Validators;
+using model.validata.com.ValueObjects.Product;
 using Moq;
-using test.utils;
 
 namespace business.validata.test
 {
+
+
     public class OrderQueryBusinessTests
     {
-        private readonly Mock<IOrderRepository> _mockOrderRepository;
-        private readonly Mock<IOrderItemRepository> _mockOrderItemRepository;
-        private readonly Mock<IProductRepository> _mockProductRepository;
-        private readonly Mock<IGenericValidation<Customer>> _mockGenericValidationCustomer;
-        private readonly Mock<ILogger<OrderQueryBusiness>> _mockLogger = new();
-        private readonly OrderQueryBusiness _orderQueryBusiness;
+        private readonly Mock<IOrderRepository> orderRepoMock = new();
+        private readonly Mock<IOrderItemRepository> orderItemRepoMock = new();
+        private readonly Mock<IProductRepository> productRepoMock = new();
+        private readonly Mock<IGenericValidation<Customer>> validationMock = new();
+        private readonly Mock<ILogger<OrderQueryBusiness>> loggerMock = new();
+        private readonly Mock<IOrderAdaptor> adaptorMock = new();
+
+        private readonly OrderQueryBusiness sut;
 
         public OrderQueryBusinessTests()
         {
-            _mockOrderRepository = new Mock<IOrderRepository>();
-            _mockOrderItemRepository = new Mock<IOrderItemRepository>();
-            _mockProductRepository = new Mock<IProductRepository>();
-            _mockGenericValidationCustomer = new Mock<IGenericValidation<Customer>>();
-
-            _orderQueryBusiness = new OrderQueryBusiness(
-                _mockOrderRepository.Object,
-                _mockOrderItemRepository.Object,
-                _mockProductRepository.Object,
-                _mockGenericValidationCustomer.Object,
-                _mockLogger.Object
+            sut = new OrderQueryBusiness(
+                orderRepoMock.Object,
+                orderItemRepoMock.Object,
+                productRepoMock.Object,
+                validationMock.Object,
+                loggerMock.Object,
+                adaptorMock.Object
             );
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfOrderRepositoryIsNull()
+        public void Constructor_ThrowsIfOrderRepositoryIsNull()
         {
-            var ex = Assert.Throws<ArgumentNullException>(() => new OrderQueryBusiness(
-                null!, _mockOrderItemRepository.Object, _mockProductRepository.Object, _mockGenericValidationCustomer.Object, _mockLogger.Object));
-           
-            Assert.Equal("repository", ex.ParamName);
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderQueryBusiness(
+                    null!,
+                    orderItemRepoMock.Object,
+                    productRepoMock.Object,
+                    validationMock.Object,
+                    loggerMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfOrderItemRepositoryIsNull()
+        public void Constructor_ThrowsIfOrderItemRepositoryIsNull()
         {
-            var ex = Assert.Throws<ArgumentNullException>(() => new OrderQueryBusiness(
-                _mockOrderRepository.Object, null!, _mockProductRepository.Object, _mockGenericValidationCustomer.Object, _mockLogger.Object));
-            
-            Assert.Equal("repositoryItem", ex.ParamName);
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderQueryBusiness(
+                    orderRepoMock.Object,
+                    null!,
+                    productRepoMock.Object,
+                    validationMock.Object,
+                    loggerMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfProductRepositoryIsNull()
+        public void Constructor_ThrowsIfProductRepositoryIsNull()
         {
-            var ex = Assert.Throws<ArgumentNullException>(() => new OrderQueryBusiness(
-                _mockOrderRepository.Object, _mockOrderItemRepository.Object, null!, _mockGenericValidationCustomer.Object, _mockLogger.Object));
-           
-            Assert.Equal("repositoryProduct", ex.ParamName);
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderQueryBusiness(
+                    orderRepoMock.Object,
+                    orderItemRepoMock.Object,
+                    null!,
+                    validationMock.Object,
+                    loggerMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfGenericValidationCustomerIsNull()
+        public void Constructor_ThrowsIfGenericValidationCustomerIsNull()
         {
-            var ex = Assert.Throws<ArgumentNullException>(() => new OrderQueryBusiness(
-                _mockOrderRepository.Object, _mockOrderItemRepository.Object, _mockProductRepository.Object, null!, _mockLogger.Object));
-           
-            Assert.Equal("genericValidationCustomer", ex.ParamName);
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderQueryBusiness(
+                    orderRepoMock.Object,
+                    orderItemRepoMock.Object,
+                    productRepoMock.Object,
+                    null!,
+                    loggerMock.Object,
+                    adaptorMock.Object));
         }
 
+        [Fact]
+        public void Constructor_ThrowsIfLoggerIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderQueryBusiness(
+                    orderRepoMock.Object,
+                    orderItemRepoMock.Object,
+                    productRepoMock.Object,
+                    validationMock.Object,
+                    null!,
+                    adaptorMock.Object));
+        }
 
         [Fact]
-        public async Task ListAsync_ReturnsCustomerNotFound_WhenCustomerDoesNotExist()
+        public void Constructor_ThrowsIfOrderAdaptorIsNull()
         {
-            int customerId = 100;
-            _mockGenericValidationCustomer.Setup(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderQueryBusiness(
+                    orderRepoMock.Object,
+                    orderItemRepoMock.Object,
+                    productRepoMock.Object,
+                    validationMock.Object,
+                    loggerMock.Object,
+                    null!));
+        }
+
+        [Fact]
+        public void Constructor_Succeeds_WhenAllDependenciesAreValid()
+        {
+            var sut = new OrderQueryBusiness(
+                orderRepoMock.Object,
+                orderItemRepoMock.Object,
+                productRepoMock.Object,
+                validationMock.Object,
+                loggerMock.Object,
+                adaptorMock.Object);
+
+            Assert.NotNull(sut);
+        }
+
+        [Fact]
+        public async Task ListAsync_ShouldReturnOrders_WhenCustomerExists()
+        {
+            var customerId = 1;
+            var pagination = new PaginationRequest(1, 10);
+            var orderDtos = new List<OrderDto> { new OrderDto { OrderId = 1, CustomerId = 1 } };
+            var orderViewModels = new List<OrderViewModel> { new OrderViewModel { OrderId = 1 } };
+
+            validationMock.Setup(v => v.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = new Customer() });
+
+            orderRepoMock.Setup(r => r.GetAllAsync(customerId, pagination)).ReturnsAsync(orderDtos);
+            adaptorMock.Setup(a => a.Invoke(orderDtos)).Returns(orderViewModels);
+
+            var result = await sut.ListAsync(customerId, pagination);
+
+            result.Success.Should().BeTrue();
+            result.Data.Should().HaveCount(1);
+        }
+
+        [Fact]
+        public async Task ListAsync_ShouldReturnException_WhenCustomerNotFound()
+        {
+            var customerId = 1;
+            var pagination = new PaginationRequest(1, 10);
+
+            validationMock.Setup(v => v.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = null });
 
-            var result = await _orderQueryBusiness.ListAsync(customerId, PaginationUtil.paginationRequest);
+            var result = await sut.ListAsync(customerId, pagination);
 
-            Assert.False(result.Success);
-            Assert.Equal("Customer Not Found", result.Exception);
-            Assert.Null(result.Data);
-            _mockGenericValidationCustomer.Verify(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get), Times.Once);
-            _mockOrderRepository.Verify(r => r.GetAllAsync(It.IsAny<int>(), PaginationUtil.paginationRequest), Times.Never);
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("Customer Not Found");
         }
 
         [Fact]
-        public async Task ListAsync_ReturnsOrdersSuccessfully_WhenOrdersExist()
+        public async Task ListAsync_ShouldReturnException_WhenRepositoryThrows()
         {
-            int customerId = 1;
-            var customer = new Customer { CustomerId = customerId };
-            var orders = new List<Order>
-        {
-            new Order { OrderId = 1, CustomerId = customerId, OrderDate = new DateTime(2023, 1, 1), TotalAmount = 50.00f },
-            new Order { OrderId = 2, CustomerId = customerId, OrderDate = new DateTime(2023, 1, 15), TotalAmount = 75.00f }
-        };
+            var customerId = 1;
+            var pagination = new PaginationRequest(1, 10);
 
-            _mockGenericValidationCustomer.Setup(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
-            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest)).ReturnsAsync(orders);
+            validationMock.Setup(v => v.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = new Customer() });
 
-            var result = await _orderQueryBusiness.ListAsync(customerId, PaginationUtil.paginationRequest);
+            orderRepoMock.Setup(r => r.GetAllAsync(customerId, pagination)).ThrowsAsync(new Exception("DB Error"));
 
-            Assert.True(result.Success);
-            Assert.Null(result.Exception);
-            Assert.NotNull(result.Data);
-            var orderViewModels = result.Data!.ToList();
-            Assert.Equal(2, orderViewModels.Count);
-            Assert.Equal(1, orderViewModels[0].OrderId);
-            _mockOrderRepository.Verify(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest), Times.Once);
+            var result = await sut.ListAsync(customerId, pagination);
+
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("DB Error");
         }
 
         [Fact]
-        public async Task ListAsync_ReturnsEmptyList_WhenNoOrdersExistForCustomer()
+        public async Task ListAsync_ShouldReturnMessage_WhenNoOrders()
         {
-            int customerId = 1;
-            var customer = new Customer { CustomerId = customerId };
-            var orders = new List<Order>();
+            var customerId = 1;
+            var pagination = new PaginationRequest(1, 10);
 
-            _mockGenericValidationCustomer.Setup(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
-            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest)).ReturnsAsync(orders);
+            validationMock.Setup(v => v.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = new Customer() });
 
-            var result = await _orderQueryBusiness.ListAsync(customerId, PaginationUtil.paginationRequest);
+            orderRepoMock.Setup(r => r.GetAllAsync(customerId, pagination)).ReturnsAsync(new List<OrderDto>());
+            adaptorMock.Setup(a => a.Invoke(It.IsAny<IEnumerable<OrderDto>>())).Returns(new List<OrderViewModel>());
 
-            Assert.False(result.Success);
-            Assert.NotNull(result.Exception);
-            Assert.Equal("No record found", result.Exception);
-            
+            var result = await sut.ListAsync(customerId, pagination);
+
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("No record found");
         }
 
         [Fact]
-        public async Task ListAsync_HandlesRepositoryException()
+        public async Task GetAsync_ShouldReturnOrderDetails_WhenOrderExists()
         {
-            int customerId = 1;
-            var customer = new Customer { CustomerId = customerId };
-            var expectedExceptionMessage = "Database error during ListAsync";
+            var orderId = 100;
+            var customerId = 1;
+            var order = new OrderDto { OrderId = orderId, CustomerId = customerId };
+            var detailModel = new OrderDetailViewModel();
 
-            _mockGenericValidationCustomer.Setup(gv => gv.Exists(customerId, model.validata.com.Enumeration.BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
-            _mockOrderRepository.Setup(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest)).ThrowsAsync(new Exception(expectedExceptionMessage));
+            var orderItems = new List<OrderItemDto>
+            {
+                new OrderItemDto { ProductId = 10, OrderId = orderId, Quantity = 1, ProductPrice = 9.99m }
+            };
 
-            var result = await _orderQueryBusiness.ListAsync(customerId, PaginationUtil.paginationRequest);
+                var products = new List<Product>
+            {
+                new Product(10, new ProductName("Item A"), new ProductPrice(9.99m))
+            };
 
-            Assert.False(result.Success);
-            Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Data);
-            _mockOrderRepository.Verify(r => r.GetAllAsync(customerId, PaginationUtil.paginationRequest), Times.Once);
+            orderRepoMock.Setup(r => r.GetByIdAsync(orderId, customerId)).ReturnsAsync(order);
+            adaptorMock.Setup(a => a.InvokeAsync(order)).ReturnsAsync(detailModel);
+            orderItemRepoMock.Setup(r => r.GetAllAsync(customerId)).ReturnsAsync(orderItems);
+            productRepoMock.Setup(p => p.GetAllWithDeletedAsync()).ReturnsAsync(products);
+
+            var result = await sut.GetAsync(orderId, customerId);
+
+            result.Success.Should().BeTrue();
+            result.Data.Should().NotBeNull();
+            result.Data!.Items.Should().HaveCount(1);
+            result.Data.Items.First().ProductName.Should().Be("Item A");
         }
 
         [Fact]
-        public async Task GetAsync_ReturnsNoRecordFound_WhenOrderDoesNotExist()
+        public async Task GetAsync_ShouldReturnError_WhenOrderNotFound()
         {
-            int orderId = 1, customerId = 1;
-            _mockOrderRepository.Setup(r => r.GetByIdAsync(orderId, customerId)).ReturnsAsync((Order?)null);
+            orderRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<int>())).ReturnsAsync((OrderDto?)null);
 
-            var result = await _orderQueryBusiness.GetAsync(orderId, customerId);
+            var result = await sut.GetAsync(1, 1);
 
-            Assert.False(result.Success);
-            Assert.Equal("No record found", result.Exception);
-            Assert.Null(result.Data);
-            _mockOrderRepository.Verify(r => r.GetByIdAsync(orderId, customerId), Times.Once);
-            _mockOrderItemRepository.Verify(r => r.GetAllAsync(It.IsAny<int>()), Times.Never);
-            _mockProductRepository.Verify(r => r.GetAllWithDeletedAsync(), Times.Never);
-        }
-
-        
-
-        [Fact]
-        public async Task GetAsync_HandlesRepositoryException()
-        {
-            int orderId = 1, customerId = 1;
-            var expectedExceptionMessage = "Database error during GetAsync";
-            _mockOrderRepository.Setup(r => r.GetByIdAsync(orderId, customerId)).ThrowsAsync(new Exception(expectedExceptionMessage));
-
-            var result = await _orderQueryBusiness.GetAsync(orderId, customerId);
-
-            Assert.False(result.Success);
-            Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Data);
-            _mockOrderRepository.Verify(r => r.GetByIdAsync(orderId, customerId), Times.Once);
-            _mockOrderItemRepository.Verify(r => r.GetAllAsync(It.IsAny<int>()), Times.Never);
-            _mockProductRepository.Verify(r => r.GetAllWithDeletedAsync(), Times.Never);
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("No record found");
         }
 
         [Fact]
-        public async Task GetAsync_OrderItemsAreEmpty_ReturnsOrderDetailWithEmptyItems()
+        public async Task GetAsync_ShouldReturnError_WhenRepositoryThrows()
         {
-            int orderId = 1, customerId = 1;
-            var order = new Order { OrderId = orderId, CustomerId = customerId, OrderDate = DateTime.Now, TotalAmount = 0.00f};
-            var emptyOrderItems = new List<OrderItem>();
-            var products = new List<Product>(); 
+            orderRepoMock.Setup(r => r.GetByIdAsync(It.IsAny<int>(), It.IsAny<int>()))
+                .ThrowsAsync(new Exception("Fetch failed"));
 
-            _mockOrderRepository.Setup(r => r.GetByIdAsync(orderId, customerId)).ReturnsAsync(order);
-            _mockOrderItemRepository.Setup(r => r.GetAllAsync(customerId)).ReturnsAsync(emptyOrderItems);
-            _mockProductRepository.Setup(r => r.GetAllWithDeletedAsync()).ReturnsAsync(products);
+            var result = await sut.GetAsync(1, 1);
 
-            var result = await _orderQueryBusiness.GetAsync(orderId, customerId);
-
-            Assert.True(result.Success);
-            Assert.Null(result.Exception);
-            Assert.NotNull(result.Data);
-            Assert.Equal(orderId, result.Data!.OrderId);
-            Assert.Empty(result.Data.Items);
-            _mockOrderRepository.Verify(r => r.GetByIdAsync(orderId, customerId), Times.Once);
-            _mockOrderItemRepository.Verify(r => r.GetAllAsync(customerId), Times.Once);
-            _mockProductRepository.Verify(r => r.GetAllWithDeletedAsync(), Times.Once); 
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("Fetch failed");
         }
-}
-
-
-
+    }
 
 
 

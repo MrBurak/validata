@@ -1,12 +1,14 @@
 ﻿using business.validata.com.Interfaces;
 using business.validata.com.Interfaces.Utils;
 using business.validata.com.Interfaces.Validators;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using Microsoft.Extensions.Logging;
 using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Product;
 using util.validata.com;
+using business.validata.com.Adaptors;
+using business.validata.com.Interfaces.Adaptors;
 
 namespace business.validata.com
 {
@@ -18,23 +20,28 @@ namespace business.validata.com
         private readonly IGenericLambdaExpressions genericLambdaExpressions;
         private readonly IGenericValidation<Product> genericValidation;
         private readonly ILogger<ProductCommandBusiness> logger;
+        private readonly IProductAdaptor productAdaptor;
         public ProductCommandBusiness(
             IProductValidation validation,
             IUnitOfWork unitOfWork,
             IGenericValidation<Product> genericValidation,
             IGenericLambdaExpressions genericLambdaExpressions,
-            ILogger<ProductCommandBusiness> logger)
+            ILogger<ProductCommandBusiness> logger,
+            IProductAdaptor productAdaptor
+            )
         {
             ArgumentNullException.ThrowIfNull(validation);
             ArgumentNullException.ThrowIfNull(unitOfWork);
             ArgumentNullException.ThrowIfNull(genericLambdaExpressions);
             ArgumentNullException.ThrowIfNull(genericValidation);
             ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(productAdaptor);
             this.validation = validation;
             this.unitOfWork = unitOfWork;
             this.genericLambdaExpressions = genericLambdaExpressions;
             this.genericValidation = genericValidation;
             this.logger = logger;
+            this.productAdaptor = productAdaptor;
         }
 
         public async Task<CommandResult<ProductModel>> InvokeAsync(Product product, BusinessSetOperation businessSetOperation)
@@ -58,8 +65,8 @@ namespace business.validata.com
                 {
                     x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
                     x.OperationSourceId = (int)BusinessOperationSource.Api;
-                    x.Name = product.Name;
-                    x.Price = product.Price;
+                    x.ChangeName(product.Name);
+                    x.UpdatePrice(product.Price);
                 }
             };
                 product.OperationSourceId = (int)BusinessOperationSource.Api;
@@ -82,7 +89,7 @@ namespace business.validata.com
                     logger.LogInformation("Product updated with ID: {ProductId}", result?.ProductId);
                 }
 
-                apiResult.Data = ObjectUtil.ConvertObj<ProductModel, Product>(result!);
+                apiResult.Data = productAdaptor.Invoke(result!);
                 apiResult.Success = true;
             }
             catch (Exception ex)
@@ -108,19 +115,11 @@ namespace business.validata.com
                 return apiResult;
             }
 
-            List<Action<Product>> properties = new()
-        {
-            x =>
-            {
-                x.DeletedOn = DateTimeUtil.SystemTime;
-                x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
-                x.OperationSourceId = (int)BusinessOperationSource.Api;
-            }
-        };
+            
 
             try
             {
-                await unitOfWork.products.UpdateAsync(genericLambdaExpressions.GetEntityById<Product>(id), properties);
+                await unitOfWork.products.DeleteAsync(genericLambdaExpressions.GetEntityById<Product>(id));
                 await unitOfWork.CommitAsync();
                 apiResult.Success = true;
                 logger.LogInformation("Product deleted with ID: {ProductId}", id);

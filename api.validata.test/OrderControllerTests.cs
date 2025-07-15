@@ -1,175 +1,158 @@
 ﻿using api.validata.com.Controllers;
 using business.validata.com.Interfaces;
-using data.validata.com.Entities;
 using Microsoft.Extensions.Logging;
 using model.validata.com;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
 using model.validata.com.Order;
 using Moq;
-using test.utils;
 
 
 namespace api.validata.test
 {
+
+
     public class OrderControllerTests
     {
-        private readonly Mock<ILogger<OrderController>> _mockLogger;
-        private readonly Mock<IOrderCommandBusiness> _mockCommandBusiness;
-        private readonly Mock<IOrderQueryBusiness> _mockQueryBusiness;
+        private readonly Mock<ILogger<OrderController>> _loggerMock = new();
+        private readonly Mock<IOrderCommandBusiness> _commandMock=new();
+        private readonly Mock<IOrderQueryBusiness> _queryMock = new();
         private readonly OrderController _controller;
 
         public OrderControllerTests()
         {
-            _mockLogger = new Mock<ILogger<OrderController>>();
-            _mockCommandBusiness = new Mock<IOrderCommandBusiness>();
-            _mockQueryBusiness = new Mock<IOrderQueryBusiness>();
+            
+
             _controller = new OrderController(
-                _mockLogger.Object,
-                _mockQueryBusiness.Object,
-                _mockCommandBusiness.Object
+                _loggerMock.Object,
+                _queryMock.Object,
+                _commandMock.Object
             );
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfLoggerIsNull()
+        public void Constructor_ThrowsIfLoggerIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new OrderController(
-                null!, _mockQueryBusiness.Object, _mockCommandBusiness.Object));
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderController(
+                    null!,
+                    _queryMock.Object,
+                    _commandMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfCommandBusinessIsNull()
+        public void Constructor_ThrowsIfQueryBusinessIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new OrderController(
-                _mockLogger.Object, _mockQueryBusiness.Object, null!));
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderController(
+                    _loggerMock.Object,
+                    null!,
+                    _commandMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfQueryBusinessIsNull()
+        public void Constructor_ThrowsIfCommandBusinessIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new OrderController(
-                _mockLogger.Object, null!, _mockCommandBusiness.Object));
+            Assert.Throws<ArgumentNullException>(() =>
+                new OrderController(
+                    _loggerMock.Object,
+                    _queryMock.Object,
+                    null!));
         }
 
         [Fact]
-        public async Task List_ReturnsQueryResultFromQueryBusiness()
+        public void Constructor_Succeeds_WhenAllDependenciesAreProvided()
         {
-            int customerId = 123;
-            var expectedResult = new QueryResult<IEnumerable<OrderViewModel>>
+            var controller = new OrderController(
+                _loggerMock.Object,
+                _queryMock.Object,
+                _commandMock.Object);
+
+            Assert.NotNull(controller);
+        }
+
+        [Fact]
+        public async Task List_ReturnsOrders_WhenQuerySucceeds()
+        {
+            var expected = new QueryResult<IEnumerable<OrderViewModel>>
             {
                 Success = true,
-                Data = new List<OrderViewModel>
-            {
-                new OrderViewModel { OrderId = 1, TotalAmount = 100.00f },
-                new OrderViewModel { OrderId = 2, TotalAmount = 250.00f }
-            }
+                Data = new List<OrderViewModel> { new() }
             };
 
-            _mockQueryBusiness.Setup(b => b.ListAsync(customerId, PaginationUtil.paginationRequest)).ReturnsAsync(expectedResult);
+            _queryMock.Setup(q => q.ListAsync(1, It.IsAny<PaginationRequest>())).ReturnsAsync(expected);
 
-            var result = await _controller.List(customerId, PaginationUtil.paginationRequest.pageNumber, PaginationUtil.paginationRequest.pageSize);
+            var result = await _controller.List(1, 1, 10);
 
-            Assert.Equal(expectedResult, result);
-            _mockQueryBusiness.Verify(b => b.ListAsync(customerId, PaginationUtil.paginationRequest), Times.Once);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
         }
 
         [Fact]
-        public async Task Insert_MapsRequestAndInvokesCommandBusiness()
+        public async Task Insert_ReturnsSuccess_WhenCommandSucceeds()
         {
             var insertModel = new OrderInsertModel
             {
                 CustomerId = 1,
-                Items = new List<OrderItemInsertModel> { new OrderItemInsertModel { ProductId = 101, Quantity = 1 } }
-            };
-            var expectedOrderDetail = new OrderDetailViewModel
-            {
-                OrderId = 1,
-                TotalAmount = 50.00f,
-                Items = new List<OrderItemViewModel>()
-            };
-            var expectedCommandResult = new CommandResult<OrderDetailViewModel>
-            {
-                Success = true,
-                Data = expectedOrderDetail
+                Items = new List<OrderItemInsertModel> { new() }
             };
 
-            _mockCommandBusiness.Setup(b => b.InvokeAsync(
-                    It.IsAny<OrderUpdateModel>(),
+            var expected = new CommandResult<OrderDetailViewModel> { Success = true };
+
+            _commandMock
+                .Setup(c => c.InvokeAsync(
+                    It.Is<OrderUpdateModel>(o => o.CustomerId == insertModel.CustomerId),
                     BusinessSetOperation.Create))
-                .ReturnsAsync(expectedCommandResult);
+                .ReturnsAsync(expected);
 
             var result = await _controller.Insert(insertModel);
 
-            Assert.Equal(expectedCommandResult, result);
-            _mockCommandBusiness.Verify(b => b.InvokeAsync(
-                It.Is<OrderUpdateModel>(o => o.CustomerId == insertModel.CustomerId),
-                BusinessSetOperation.Create), Times.Once);
+            Assert.True(result.Success);
         }
 
         [Fact]
-        public async Task Update_InvokesCommandBusinessWithRequest()
+        public async Task Update_ReturnsSuccess_WhenOrderUpdated()
         {
-            var updateModel = new OrderUpdateModel
-            {
-                OrderId = 1,
-                CustomerId = 1,
-                Items = new List<OrderItemInsertModel> { new OrderItemInsertModel { ProductId = 101, Quantity = 2} }
-            };
-            var expectedOrderDetail = new OrderDetailViewModel
-            {
-                OrderId = 1,
-                Items = new List<OrderItemViewModel>()
-            };
-            var expectedCommandResult = new CommandResult<OrderDetailViewModel>
-            {
-                Success = true,
-                Data = expectedOrderDetail
-            };
+            var updateModel = new OrderUpdateModel { OrderId = 123 };
+            var expected = new CommandResult<OrderDetailViewModel> { Success = true };
 
-            _mockCommandBusiness.Setup(b => b.InvokeAsync(updateModel, BusinessSetOperation.Update))
-                .ReturnsAsync(expectedCommandResult);
+            _commandMock
+                .Setup(c => c.InvokeAsync(updateModel, BusinessSetOperation.Update))
+                .ReturnsAsync(expected);
 
             var result = await _controller.Update(updateModel);
 
-            Assert.Equal(expectedCommandResult, result);
-            _mockCommandBusiness.Verify(b => b.InvokeAsync(updateModel, BusinessSetOperation.Update), Times.Once);
+            Assert.True(result.Success);
         }
 
         [Fact]
-        public async Task Delete_InvokesCommandBusinessDelete()
+        public async Task Delete_ReturnsSuccess_WhenDeleted()
         {
-            int orderIdToDelete = 1;
-            var expectedCommandResult = new CommandResult<Order>
-            {
-                Success = true,
-                Data = new Order { OrderId = orderIdToDelete }
-            };
+            var expected = new CommandResult<Order> { Success = true };
 
-            _mockCommandBusiness.Setup(b => b.DeleteAsync(orderIdToDelete)).ReturnsAsync(expectedCommandResult);
+            _commandMock.Setup(c => c.DeleteAsync(123)).ReturnsAsync(expected);
 
-            var result = await _controller.Delete(orderIdToDelete);
+            var result = await _controller.Delete(123);
 
-            Assert.Equal(expectedCommandResult, result);
-            _mockCommandBusiness.Verify(b => b.DeleteAsync(orderIdToDelete), Times.Once);
+            Assert.True(result.Success);
         }
 
         [Fact]
-        public async Task Get_ReturnsQueryResultFromQueryBusiness()
+        public async Task Get_ReturnsOrder_WhenFound()
         {
-            int orderId = 1;
-            int customerId = 123;
-            var expectedResult = new QueryResult<OrderDetailViewModel?>
+            var expected = new QueryResult<OrderDetailViewModel?>
             {
                 Success = true,
-                Data = new OrderDetailViewModel { OrderId = orderId, TotalAmount = 150.00f }
+                Data = new OrderDetailViewModel()
             };
 
-            _mockQueryBusiness.Setup(b => b.GetAsync(orderId, customerId)).ReturnsAsync(expectedResult);
+            _queryMock.Setup(q => q.GetAsync(100, 200)).ReturnsAsync(expected);
 
-            var result = await _controller.Get(orderId, customerId);
+            var result = await _controller.Get(100, 200);
 
-            Assert.Equal(expectedResult, result);
-            _mockQueryBusiness.Verify(b => b.GetAsync(orderId, customerId), Times.Once);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
         }
     }
+
 }

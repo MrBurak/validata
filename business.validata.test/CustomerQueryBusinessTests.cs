@@ -1,123 +1,169 @@
 ﻿using business.validata.com;
 using business.validata.com.Interfaces;
-using data.validata.com.Entities;
+using business.validata.com.Interfaces.Adaptors;
 using data.validata.com.Interfaces.Repository;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
 using model.validata.com;
+using model.validata.com.DTO;
+using model.validata.com.Order;
 using Moq;
-using test.utils;
 
 namespace business.validata.test
 {
+  
+
     public class CustomerQueryBusinessTests
     {
-        private readonly Mock<ICustomerRepository> _mockRepository=new();
-        private readonly Mock<ILogger<CustomerQueryBusiness>> _mockLogger=new();
-        private readonly Mock<IOrderQueryBusiness> _mockOrderQueryBusiness = new();
-        private readonly CustomerQueryBusiness _customerQueryBusiness;
-        
+        private readonly Mock<ICustomerRepository> repositoryMock = new();
+        private readonly Mock<ILogger<CustomerQueryBusiness>> loggerMock = new();
+        private readonly Mock<IOrderQueryBusiness> orderQueryMock = new();
+        private readonly Mock<ICustomerAdaptor> adaptorMock = new();
+
+        private readonly CustomerQueryBusiness sut;
 
         public CustomerQueryBusinessTests()
         {
-            
-            _customerQueryBusiness = new CustomerQueryBusiness(_mockRepository.Object, _mockLogger.Object, _mockOrderQueryBusiness.Object);
+            sut = new CustomerQueryBusiness(
+                repositoryMock.Object,
+                loggerMock.Object,
+                orderQueryMock.Object,
+                adaptorMock.Object
+            );
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfRepositoryIsNull()
+        public void Constructor_ThrowsIfRepositoryIsNull()
         {
-            var ex = Assert.Throws<ArgumentNullException>(() => new CustomerQueryBusiness(null!, _mockLogger.Object,_mockOrderQueryBusiness.Object));
-            Assert.Equal("repository", ex.ParamName);
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerQueryBusiness(
+                    null!,
+                    loggerMock.Object,
+                    orderQueryMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public async Task ListAsync_ReturnsAllCustomersSuccessfully()
+        public void Constructor_ThrowsIfLoggerIsNull()
         {
-            var customers = new List<Customer>
-        {
-            new Customer { CustomerId = 1, FirstName = "John", LastName = "Doe", Address = "123 Main St", Pobox = "1001" },
-            new Customer { CustomerId = 2, FirstName = "Jane", LastName = "Smith", Address = "456 Oak Ave", Pobox = "2002" }
-        };
-            _mockRepository.Setup(r => r.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(customers);
-
-            var result = await _customerQueryBusiness.ListAsync(PaginationUtil.paginationRequest);
-
-            Assert.True(result.Success);
-            Assert.Null(result.Exception);
-            Assert.NotNull(result.Data);
-            var customerViewModels = result.Data!.ToList();
-            Assert.Equal(2, customerViewModels.Count);
-            Assert.Equal("John", customerViewModels[0].FirstName);
-            Assert.Equal("123 Main St", customerViewModels[0].Address);
-            Assert.Equal("Jane", customerViewModels[1].FirstName);
-            Assert.Equal("456 Oak Ave", customerViewModels[1].Address);
-            _mockRepository.Verify(r => r.GetAllAsync(PaginationUtil.paginationRequest), Times.Once);
-
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerQueryBusiness(
+                    repositoryMock.Object,
+                    null!,
+                    orderQueryMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public async Task ListAsync_HandlesRepositoryException()
+        public void Constructor_ThrowsIfOrderQueryBusinessIsNull()
         {
-            var expectedExceptionMessage = "Database error during ListAsync";
-            _mockRepository.Setup(r => r.GetAllAsync(PaginationUtil.paginationRequest)).ThrowsAsync(new Exception(expectedExceptionMessage));
-
-            var result = await _customerQueryBusiness.ListAsync(PaginationUtil.paginationRequest);
-
-            Assert.False(result.Success);
-            Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Data);
-            _mockRepository.Verify(r => r.GetAllAsync(PaginationUtil.paginationRequest), Times.Once);
-
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerQueryBusiness(
+                    repositoryMock.Object,
+                    loggerMock.Object,
+                    null!,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public async Task GetAsync_ReturnsCustomerSuccessfully()
+        public void Constructor_ThrowsIfAdaptorIsNull()
         {
-            int customerId = 1;
-            var customer = new Customer { CustomerId = customerId, FirstName = "Test", LastName = "User", Address = "789 Pine", Pobox = "3003" };
-            _mockRepository.Setup(r => r.GetByIdAsync(customerId)).ReturnsAsync(customer);
-
-            var result = await _customerQueryBusiness.GetAsync(customerId);
-
-            Assert.True(result.Success);
-            Assert.Null(result.Exception);
-            Assert.NotNull(result.Data);
-            Assert.Equal(customerId, result.Data!.CustomerId);
-            Assert.Equal("Test", result.Data.FirstName);
-            Assert.Equal("User", result.Data.LastName);
-            _mockRepository.Verify(r => r.GetByIdAsync(customerId), Times.Once);
- 
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerQueryBusiness(
+                    repositoryMock.Object,
+                    loggerMock.Object,
+                    orderQueryMock.Object,
+                    null!));
         }
 
         [Fact]
-        public async Task GetAsync_ReturnsNoRecordFound_WhenCustomerDoesNotExist()
+        public void Constructor_Succeeds_WithAllValidDependencies()
         {
-            int customerId = 99;
-            _mockRepository.Setup(r => r.GetByIdAsync(customerId)).ReturnsAsync((Customer?)null);
+            var sut = new CustomerQueryBusiness(
+                repositoryMock.Object,
+                loggerMock.Object,
+                orderQueryMock.Object,
+                adaptorMock.Object);
 
-            var result = await _customerQueryBusiness.GetAsync(customerId);
-
-            Assert.False(result.Success);
-            Assert.Equal("No record found", result.Exception);
-            Assert.Null(result.Data);
-            _mockRepository.Verify(r => r.GetByIdAsync(customerId), Times.Once);
-           
+            Assert.NotNull(sut);
         }
 
         [Fact]
-        public async Task GetAsync_HandlesRepositoryException()
+        public async Task ListAsync_ShouldReturnCustomers_WhenRepositorySucceeds()
         {
-            int customerId = 1;
-            var expectedExceptionMessage = "Network error during GetAsync";
-            _mockRepository.Setup(r => r.GetByIdAsync(customerId)).ThrowsAsync(new Exception(expectedExceptionMessage));
+            var pagination = new PaginationRequest(1, 10);
+            var customers = new List<CustomerDto> { new() { CustomerId = 1, FirstName = "Alice" } };
 
-            var result = await _customerQueryBusiness.GetAsync(customerId);
+            repositoryMock.Setup(r => r.GetAllAsync(pagination)).ReturnsAsync(customers);
 
-            Assert.False(result.Success);
-            Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Data);
-            _mockRepository.Verify(r => r.GetByIdAsync(customerId), Times.Once);
+            var result = await sut.ListAsync(pagination);
 
+            result.Success.Should().BeTrue();
+            result.Data.Should().BeEquivalentTo(customers);
+        }
+
+        [Fact]
+        public async Task ListAsync_ShouldHandleRepositoryException()
+        {
+            var pagination = new PaginationRequest(1, 10);
+
+            repositoryMock.Setup(r => r.GetAllAsync(pagination)).ThrowsAsync(new Exception("Database error"));
+
+            var result = await sut.ListAsync(pagination);
+
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("Database error");
+        }
+
+        [Fact]
+        public async Task GetAsync_ShouldReturnCustomer_WhenFound()
+        {
+            var customer = new CustomerDto { CustomerId = 1, FirstName = "John", LastName="Doe" };
+
+            repositoryMock.Setup(r => r.GetByIdAsync(1)).ReturnsAsync(customer);
+
+            var result = await sut.GetAsync(1);
+
+            result.Success.Should().BeTrue();
+            result.Data.Should().BeEquivalentTo(customer);
+        }
+
+        [Fact]
+        public async Task GetAsync_ShouldReturnError_WhenCustomerNotFound()
+        {
+            repositoryMock.Setup(r => r.GetByIdAsync(999)).ReturnsAsync((CustomerDto?)null);
+
+            var result = await sut.GetAsync(999);
+
+            result.Success.Should().BeFalse();
+            result.Data.Should().BeNull();
+            result.Exception.Should().Be("No record found");
+        }
+
+        [Fact]
+        public async Task GetAsync_ShouldHandleException()
+        {
+            repositoryMock.Setup(r => r.GetByIdAsync(1)).ThrowsAsync(new Exception("Boom"));
+
+            var result = await sut.GetAsync(1);
+
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("Boom");
+        }
+
+        [Fact]
+        public async Task ListOrderAsync_ShouldDelegateToOrderQueryBusiness()
+        {
+            var customerId = 1;
+            var pagination = new PaginationRequest(1, 10);
+            var expected = new QueryResult<IEnumerable<OrderViewModel>> { Success = true };
+
+            orderQueryMock.Setup(o => o.ListAsync(customerId, pagination)).ReturnsAsync(expected);
+
+            var result = await sut.ListOrderAsync(customerId, pagination);
+
+            result.Should().BeSameAs(expected);
         }
     }
+
 }

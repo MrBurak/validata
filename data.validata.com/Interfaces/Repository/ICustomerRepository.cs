@@ -1,13 +1,14 @@
-﻿using data.validata.com.Entities;
-using model.validata.com;
+﻿using model.validata.com;
+using model.validata.com.DTO;
+using model.validata.com.Entities;
 
 
 namespace data.validata.com.Interfaces.Repository
 {
     public interface ICustomerRepository
     {
-        Task<Customer?> GetByIdAsync(int customerId);
+        Task<CustomerDto?> GetByIdAsync(int id);
 
-        Task<IEnumerable<Customer>> GetAllAsync(PaginationRequest paginationRequest);
+        Task<IEnumerable<CustomerDto>> GetAllAsync(PaginationRequest paginationRequest);
     }
 }

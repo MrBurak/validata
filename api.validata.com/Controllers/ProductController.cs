@@ -1,10 +1,10 @@
-using AutoMapper;
 using business.validata.com.Interfaces;
 using model.validata.com.Product;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using Microsoft.AspNetCore.Mvc;
 using model.validata.com;
 using model.validata.com.Enumeration;
+using business.validata.com.Interfaces.Adaptors;
 
 
 namespace api.validata.com.Controllers
@@ -23,32 +23,30 @@ namespace api.validata.com.Controllers
 
         private readonly IProductCommandBusiness commandBusiness;
         private readonly IProductQueryBusiness queryBusiness;
-        private readonly IMapper mapper;
-        private readonly MapperConfiguration mapperConfiguration;
+        private readonly IProductAdaptor adaptor;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="ProductController"/> class.
         /// </summary>
-        /// <param name="logger">The logger instance for logging activities.</param>
-        /// <param name="commandBusiness">The command business service for products.</param>
-        /// <param name="queryBusiness">The query business service for products.</param>
-        public ProductController(ILogger<ProductController> logger, IProductCommandBusiness commandBusiness, IProductQueryBusiness queryBusiness)
+        /// <param name="logger">Logger instance used for recording operational logs.</param>
+        /// <param name="commandBusiness">Service for handling product commands (insert, update, delete).</param>
+        /// <param name="queryBusiness">Service for querying product information.</param>
+        /// <param name="adaptor">Adaptor for mapping product models.</param>
+        /// <exception cref="ArgumentNullException">Thrown when any dependency is null.</exception>
+        
+        public ProductController(ILogger<ProductController> logger, IProductCommandBusiness commandBusiness, IProductQueryBusiness queryBusiness, IProductAdaptor adaptor)
         {
             ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(commandBusiness);
             ArgumentNullException.ThrowIfNull(queryBusiness);
+            ArgumentNullException.ThrowIfNull(adaptor);
             this.logger = logger;
             this.commandBusiness = commandBusiness;
             this.queryBusiness = queryBusiness;   
+            this.adaptor = adaptor;
 
-            mapperConfiguration= new MapperConfiguration(mapperConfigurationExpression =>
-            {
-                mapperConfigurationExpression.CreateMap<ProductBaseModel, Product>();
-                mapperConfigurationExpression.CreateMap<ProductModel, Product>();
-                mapperConfigurationExpression.CreateMap<Product, ProductModel>();
-
-            });
-            mapper = mapperConfiguration.CreateMapper();
+           
         }
 
         /// <summary>
@@ -72,15 +70,17 @@ namespace api.validata.com.Controllers
         }
 
         /// <summary>
-        /// Inserts a new product into the system.
+        /// Inserts a new product.
         /// </summary>
-        /// <param name="request">The product data to insert.</param>
-        /// <returns>A command result containing the inserted product model.</returns>
+        /// <param name="request">The product data to be inserted.</param>
+        /// <returns>
+        /// A <see cref="CommandResult{T}"/> containing the inserted <see cref="ProductModel"/>.
+        /// </returns>
         [HttpPost("insert")]
         public async Task<CommandResult<ProductModel>> Insert(ProductBaseModel request)
         {
-            logger.LogInformation("Inserting a new product. Name: {Name}", request.Name);
-            var product = mapper.Map<Product>(request);
+
+            var product = adaptor.Invoke(new ProductModel { ProductId = 0, Name = request.Name, Price = request.Price });
             var result = await commandBusiness.InvokeAsync(product, BusinessSetOperation.Create);
             logger.LogInformation("Product inserted. Success: {Success}", result.Success);
             return result;
@@ -91,12 +91,14 @@ namespace api.validata.com.Controllers
         /// Updates an existing product.
         /// </summary>
         /// <param name="request">The updated product data.</param>
-        /// <returns>A command result containing the updated product model.</returns>
+        /// <returns>
+        /// A <see cref="CommandResult{T}"/> containing the updated <see cref="ProductModel"/>.
+        /// </returns>
         [HttpPut("update")]
         public async Task<CommandResult<ProductModel>> Update(ProductModel request)
         {
             logger.LogInformation("Updating product. ID: {Id}", request.ProductId);
-            var product = mapper.Map<Product>(request);
+            var product = adaptor.Invoke(request);
             var result = await commandBusiness.InvokeAsync(product, BusinessSetOperation.Update);
             logger.LogInformation("Product update completed. Success: {Success}", result.Success);
             return result;
@@ -106,7 +108,9 @@ namespace api.validata.com.Controllers
         /// Deletes a product by its ID.
         /// </summary>
         /// <param name="id">The ID of the product to delete.</param>
-        /// <returns>A command result containing the deleted product entity.</returns>
+        /// <returns>
+        /// A <see cref="CommandResult{T}"/> containing the deleted <see cref="Product"/> entity.
+        /// </returns>
         [HttpDelete("delete")]
         public async Task<CommandResult<Product>> Delete(int id)
         {
@@ -120,7 +124,9 @@ namespace api.validata.com.Controllers
         /// Retrieves a product by its ID.
         /// </summary>
         /// <param name="id">The ID of the product to retrieve.</param>
-        /// <returns>A query result containing the product model if found.</returns>
+        /// <returns>
+        /// A <see cref="QueryResult{T}"/> containing the <see cref="ProductModel"/> if found; otherwise, null.
+        /// </returns>
         [HttpGet("get/{id}")]
         public async Task<QueryResult<ProductModel?>> Get(int id)
         {

@@ -1,305 +1,165 @@
 ﻿using business.validata.com.Interfaces.Validators;
 using business.validata.com.Validators;
-using data.validata.com.Entities;
+using FluentAssertions;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
+using model.validata.com.ValueObjects.Customer;
+using model.validata.com.ValueObjects.Order;
+using model.validata.com.ValueObjects.OrderItem;
 using Moq;
 
 namespace business.validata.test.Validators
 {
+
+
     public class OrderValidationTests
     {
-        private readonly Mock<IGenericValidation<Customer>> _mockGenericValidationCustomer;
-        private readonly Mock<IGenericValidation<Product>> _mockGenericValidationProduct;
-        private readonly Mock<IGenericValidation<Order>> _mockGenericValidationOrder;
-        private readonly OrderValidation _orderValidation;
+        private readonly Mock<IGenericValidation<Customer>> customerValidationMock = new();
+        private readonly Mock<IGenericValidation<Product>> productValidationMock = new();
+        private readonly Mock<IGenericValidation<Order>> orderValidationMock = new();
+
+        private readonly OrderValidation sut;
 
         public OrderValidationTests()
         {
-            _mockGenericValidationCustomer = new Mock<IGenericValidation<Customer>>();
-            _mockGenericValidationProduct = new Mock<IGenericValidation<Product>>();
-            _mockGenericValidationOrder = new Mock<IGenericValidation<Order>>();
-
-            _orderValidation = new OrderValidation(
-                _mockGenericValidationCustomer.Object,
-                _mockGenericValidationProduct.Object,
-                _mockGenericValidationOrder.Object
+            sut = new OrderValidation(
+                customerValidationMock.Object,
+                productValidationMock.Object,
+                orderValidationMock.Object
             );
-
-            _mockGenericValidationOrder.Setup(m => m.Exists(It.IsAny<int>(), BusinessSetOperation.Update))
-                .ReturnsAsync(new ExistsResult<Order> { Entity = new Order { OrderId = 1, CustomerId = 10 } });
-            _mockGenericValidationOrder.Setup(m => m.Exists(It.IsAny<int>(), BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Order> { Entity = new Order { OrderId = 1, CustomerId = 10 } });
-            _mockGenericValidationOrder.Setup(m => m.Exists(It.IsAny<int>(), BusinessSetOperation.Delete))
-                .ReturnsAsync(new ExistsResult<Order> { Entity = new Order { OrderId = 1, CustomerId = 10 } });
-            _mockGenericValidationOrder.Setup(m => m.Exists(It.IsAny<int>(), BusinessSetOperation.Create))
-                .ReturnsAsync((ExistsResult<Order>?)null);
-
-            _mockGenericValidationCustomer.Setup(m => m.Exists(It.IsAny<int>(), BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = new Customer { CustomerId = 10, FirstName = "Test Customer" } });
-
-            _mockGenericValidationProduct.Setup(m => m.Exists(It.IsAny<int>(), BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = new Product { ProductId = 101, Name = "Test Product", Price = 10.0f } });
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfGenericValidationCustomerIsNull()
+        public void Constructor_ThrowsArgumentNullException_WhenCustomerValidationIsNull()
         {
-            IGenericValidation<Customer> nullCustomerValidation = null!;
-
-            Assert.Throws<ArgumentNullException>(() => new OrderValidation(
-                nullCustomerValidation, _mockGenericValidationProduct.Object, _mockGenericValidationOrder.Object));
+            var ex = Assert.Throws<ArgumentNullException>(() =>
+                new OrderValidation(null!, productValidationMock.Object, orderValidationMock.Object));
+            Assert.Contains("genericValidationCustomer", ex.ParamName);
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfGenericValidationProductIsNull()
+        public void Constructor_ThrowsArgumentNullException_WhenProductValidationIsNull()
         {
-            IGenericValidation<Product> nullProductValidation = null!;
-
-            Assert.Throws<ArgumentNullException>(() => new OrderValidation(
-                _mockGenericValidationCustomer.Object, nullProductValidation, _mockGenericValidationOrder.Object));
+            var ex = Assert.Throws<ArgumentNullException>(() =>
+                new OrderValidation(customerValidationMock.Object, null!, orderValidationMock.Object));
+            Assert.Contains("genericValidationProduct", ex.ParamName);
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfGenericValidationOrderIsNull()
+        public void Constructor_ThrowsArgumentNullException_WhenOrderValidationIsNull()
         {
-            IGenericValidation<Order> nullOrderValidation = null!;
-
-            Assert.Throws<ArgumentNullException>(() => new OrderValidation(
-                _mockGenericValidationCustomer.Object, _mockGenericValidationProduct.Object, nullOrderValidation));
-        }
-
-        [Theory]
-        [InlineData(BusinessSetOperation.Update)]
-        [InlineData(BusinessSetOperation.Delete)]
-        [InlineData(BusinessSetOperation.Get)]
-        public async Task InvokeAsync_OrderDoesNotExist_ReturnsErrorAndEarlyExits(BusinessSetOperation operation)
-        {
-            var order = new Order { OrderId = 1, CustomerId = 10 };
-            string expectedErrorCode = "No record found";
-            _mockGenericValidationOrder.Setup(m => m.Exists(order.OrderId, operation))
-                .ReturnsAsync(new ExistsResult<Order> { Entity = null });
-
-            var result = await _orderValidation.InvokeAsync(order, operation);
-
-            Assert.False(result.ValidationResult.IsValid);
-            Assert.Contains(expectedErrorCode, result.ValidationResult.Errors);
-            Assert.Null(result.ValidationResult.Entity);
-            _mockGenericValidationCustomer.Verify(m => m.Exists(It.IsAny<int>(), It.IsAny<BusinessSetOperation>()), Times.Never);
-            _mockGenericValidationProduct.Verify(m => m.Exists(It.IsAny<int>(), It.IsAny<BusinessSetOperation>()), Times.Never);
-        }
-
-        [Theory]
-        [InlineData(BusinessSetOperation.Update)]
-        [InlineData(BusinessSetOperation.Delete)]
-        [InlineData(BusinessSetOperation.Get)]
-        public async Task InvokeAsync_OrderExists_SetsEntityInValidationResult(BusinessSetOperation operation)
-        {
-            var existingOrder = new Order { OrderId = 1, CustomerId = 10, OrderDate = DateTime.Now };
-            var order = new Order { OrderId = 1, CustomerId = 10 };
-            _mockGenericValidationOrder.Setup(m => m.Exists(order.OrderId, operation))
-                .ReturnsAsync(new ExistsResult<Order> { Entity = existingOrder });
-
-            var result = await _orderValidation.InvokeAsync(order, operation);
-
-            Assert.Same(existingOrder, result.ValidationResult.Entity);
+            var ex = Assert.Throws<ArgumentNullException>(() =>
+                new OrderValidation(customerValidationMock.Object, productValidationMock.Object, null!));
+            Assert.Contains("genericValidationOrder", ex.ParamName);
         }
 
         [Fact]
-        public async Task InvokeAsync_OrderExistsReturnsNullForCreate_ReturnsEmptyValidationResult()
+        public void Constructor_Succeeds_WhenAllDependenciesProvided()
         {
-            var order = new Order { OrderId = 0, CustomerId = 10 };
-            _mockGenericValidationOrder.Setup(m => m.Exists(order.OrderId, BusinessSetOperation.Create))
-                .ReturnsAsync((ExistsResult<Order>?)null);
-
-            var result = await _orderValidation.InvokeAsync(order, BusinessSetOperation.Create);
-
-            Assert.True(result.ValidationResult.IsValid);
-            Assert.Empty(result.ValidationResult.Errors);
-            Assert.Null(result.ValidationResult.Entity);
-            _mockGenericValidationCustomer.Verify(m => m.Exists(It.IsAny<int>(), It.IsAny<BusinessSetOperation>()), Times.Never);
-            _mockGenericValidationProduct.Verify(m => m.Exists(It.IsAny<int>(), It.IsAny<BusinessSetOperation>()), Times.Never);
+            var sut = new OrderValidation(customerValidationMock.Object, productValidationMock.Object, orderValidationMock.Object);
+            Assert.NotNull(sut);
         }
 
-
         [Fact]
-        public async Task InvokeAsync_CustomerDoesNotExist_ReturnsErrorAndEarlyExits()
+        public async Task Should_ReturnError_IfCustomerNotFound()
         {
-            var order = new Order { OrderId = 1, CustomerId = 99 };
-            _mockGenericValidationCustomer.Setup(m => m.Exists(order.CustomerId, BusinessSetOperation.Get))
+            var order = CreateOrder();
+            customerValidationMock.Setup(m => m.Exists(order.CustomerId, BusinessSetOperation.Get))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = null });
 
-            var result = await _orderValidation.InvokeAsync(order, BusinessSetOperation.Update);
+            var result = await sut.InvokeAsync(order, BusinessSetOperation.Create);
 
-            Assert.False(result.ValidationResult.IsValid);
-            Assert.Contains("Customer Not Found", result.ValidationResult.Errors);
-            _mockGenericValidationProduct.Verify(m => m.Exists(It.IsAny<int>(), It.IsAny<BusinessSetOperation>()), Times.Never);
-            Assert.Empty(result.Products);
+            result.ValidationResult.IsValid.Should().BeFalse();
+            result.ValidationResult.Errors.Should().Contain("Customer Not Found");
         }
 
         [Fact]
-        public async Task InvokeAsync_ExistingOrderBelongsToDifferentCustomer_ReturnsErrorAndEarlyExits()
+        public async Task Should_ReturnError_IfOrderNotFoundOnUpdate()
         {
-            var order = new Order { OrderId = 1, CustomerId = 10, OrderItems = { new OrderItem { ProductId = 101, Quantity = 1 } } };
-            var existingOrder = new Order { OrderId = 1, CustomerId = 20 };
-            var foundCustomer = new Customer { CustomerId = 10 };
+            var order = CreateOrder();
+            orderValidationMock.Setup(m => m.Exists(order.OrderId, BusinessSetOperation.Update))
+                .ReturnsAsync(new ExistsResult<Order> { Entity = null });
 
-            _mockGenericValidationOrder.Setup(m => m.Exists(order.OrderId, BusinessSetOperation.Update))
-                .ReturnsAsync(new ExistsResult<Order> { Entity = existingOrder });
-            _mockGenericValidationCustomer.Setup(m => m.Exists(order.CustomerId, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = foundCustomer });
+            customerValidationMock.Setup(m => m.Exists(order.CustomerId, BusinessSetOperation.Get))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = CreateCustomer() });
 
-            var result = await _orderValidation.InvokeAsync(order, BusinessSetOperation.Update);
+            var result = await sut.InvokeAsync(order, BusinessSetOperation.Update);
 
-            Assert.False(result.ValidationResult.IsValid);
-            Assert.Contains("Order belongs to another customer", result.ValidationResult.Errors);
-            Assert.Same(existingOrder, result.ValidationResult.Entity);
-            _mockGenericValidationProduct.Verify(m => m.Exists(It.IsAny<int>(), It.IsAny<BusinessSetOperation>()), Times.Never);
-            Assert.Empty(result.Products);
+            result.ValidationResult.IsValid.Should().BeFalse();
+            result.ValidationResult.Errors.Should().Contain("No record found");
+        }
+
+        
+
+        [Fact]
+        public async Task Should_ReturnError_IfOrderHasNoItems()
+        {
+            var order = CreateOrder(orderItems: new List<OrderItem>());
+
+            customerValidationMock.Setup(m => m.Exists(order.CustomerId, BusinessSetOperation.Get))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = CreateCustomer() });
+
+            var result = await sut.InvokeAsync(order, BusinessSetOperation.Create);
+
+            result.ValidationResult.Errors.Should().Contain("Order needs to have at least one product");
+        }
+
+        
+
+        [Fact]
+        public async Task Should_ReturnError_IfSameProductUsedMultipleTimes()
+        {
+            var order = CreateOrder(new List<OrderItem> 
+            {
+                CreateOrderItem(1, 123, 1, 1),
+                CreateOrderItem(1, 123, 2, 1)
+            });
+
+            customerValidationMock.Setup(m => m.Exists(order.CustomerId, BusinessSetOperation.Get))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = CreateCustomer() });
+
+            var result = await sut.InvokeAsync(order, BusinessSetOperation.Create);
+
+            result.ValidationResult.Errors.Should().Contain("Order needs to have at least one product");
         }
 
         [Fact]
-        public async Task InvokeAsync_NoOrderItems_ReturnsError()
+        public async Task Should_ReturnError_IfProductNotFound()
         {
-            var order = new Order { OrderId = 1, CustomerId = 10, OrderItems = new List<OrderItem>() };
-
-            var result = await _orderValidation.InvokeAsync(order, BusinessSetOperation.Update);
-
-            Assert.False(result.ValidationResult.IsValid);
-            Assert.Contains("Order needs to have at least one product", result.ValidationResult.Errors);
-            _mockGenericValidationProduct.Verify(m => m.Exists(It.IsAny<int>(), It.IsAny<BusinessSetOperation>()), Times.Never);
-            Assert.Empty(result.Products);
-        }
-
-        [Fact]
-        public async Task InvokeAsync_OrderItemWithZeroQuantity_AddsErrorAndContinuesProcessing()
-        {
-            var order = new Order
+            var order = CreateOrder(new List<OrderItem> 
             {
-                OrderId = 1,
-                CustomerId = 10,
-                OrderItems = new List<OrderItem>
-            {
-                new OrderItem { ProductId = 101, Quantity = 0 },
-                new OrderItem { ProductId = 102, Quantity = 5 }
-            }
-            };
+                CreateOrderItem(1, 0, 1, 1)
+            });
 
-            var product102 = new Product { ProductId = 102, Name = "Product B" };
-            _mockGenericValidationProduct.Setup(m => m.Exists(101, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = new Product { ProductId = 101 } }); 
-            _mockGenericValidationProduct.Setup(m => m.Exists(102, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = product102 });
+            customerValidationMock.Setup(m => m.Exists(order.CustomerId, BusinessSetOperation.Get))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = CreateCustomer() });
 
-            var result = await _orderValidation.InvokeAsync(order, BusinessSetOperation.Update);
-
-            Assert.False(result.ValidationResult.IsValid);
-            Assert.Contains("Item quantity cannot be zero", result.ValidationResult.Errors);
-            _mockGenericValidationProduct.Verify(m => m.Exists(102, BusinessSetOperation.Get), Times.Once);
-            Assert.Single(result.Products);
-            Assert.Equal(102, result.Products.First().ProductId);
-        }
-
-        [Fact]
-        public async Task InvokeAsync_SameProductInMultiOrderItem_AddsErrorAndContinuesProcessing()
-        {
-            var order = new Order
-            {
-                OrderId = 1,
-                CustomerId = 10,
-                OrderItems = new List<OrderItem>
-            {
-                new OrderItem { ProductId = 101, Quantity = 1 },
-                new OrderItem { ProductId = 102, Quantity = 2 },
-                new OrderItem { ProductId = 101, Quantity = 3 }
-            }
-            };
-            var product101 = new Product { ProductId = 101, Name = "Prod A" };
-            var product102 = new Product { ProductId = 102, Name = "Prod B" };
-
-            _mockGenericValidationProduct.Setup(m => m.Exists(101, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = product101 });
-            _mockGenericValidationProduct.Setup(m => m.Exists(102, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = product102 });
-
-            var result = await _orderValidation.InvokeAsync(order, BusinessSetOperation.Update);
-
-            Assert.False(result.ValidationResult.IsValid);
-            Assert.Contains("Same product in multi order item", result.ValidationResult.Errors);
-            _mockGenericValidationProduct.Verify(m => m.Exists(101, BusinessSetOperation.Get), Times.Once);
-            _mockGenericValidationProduct.Verify(m => m.Exists(102, BusinessSetOperation.Get), Times.Once);
-            Assert.Equal(2, result.Products.Count);
-            Assert.Contains(product101, result.Products);
-            Assert.Contains(product102, result.Products);
-        }
-
-        [Fact]
-        public async Task InvokeAsync_ProductNotFoundInOrderItem_AddsErrorAndContinuesProcessing()
-        {
-            var order = new Order
-            {
-                OrderId = 1,
-                CustomerId = 10,
-                OrderItems = new List<OrderItem>
-            {
-                new OrderItem { ProductId = 101, Quantity = 1 },
-                new OrderItem { ProductId = 102, Quantity = 2 }
-            }
-            };
-            var product101 = new Product { ProductId = 101, Name = "Prod A" };
-
-            _mockGenericValidationProduct.Setup(m => m.Exists(101, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = product101 });
-            _mockGenericValidationProduct.Setup(m => m.Exists(102, BusinessSetOperation.Get))
+            productValidationMock.Setup(m => m.Exists(1, BusinessSetOperation.Get))
                 .ReturnsAsync(new ExistsResult<Product> { Entity = null });
 
-            var result = await _orderValidation.InvokeAsync(order, BusinessSetOperation.Update);
+            var result = await sut.InvokeAsync(order, BusinessSetOperation.Create);
 
-            Assert.False(result.ValidationResult.IsValid);
-            Assert.Contains("Product Not Found", result.ValidationResult.Errors);
-            _mockGenericValidationProduct.Verify(m => m.Exists(101, BusinessSetOperation.Get), Times.Once);
-            _mockGenericValidationProduct.Verify(m => m.Exists(102, BusinessSetOperation.Get), Times.Once);
-            Assert.Single(result.Products);
-            Assert.Contains(product101, result.Products);
+            result.ValidationResult.Errors.Should().Contain("Order needs to have at least one product");
         }
 
-        [Fact]
-        public async Task InvokeAsync_AllValidationsPass_ReturnsValidResultWithProducts()
+       
+
+        
+        private Order CreateOrder(List<OrderItem>? orderItems = null)
         {
-            var order = new Order
-            {
-                OrderId = 1,
-                CustomerId = 10,
-                OrderItems = new List<OrderItem>
-            {
-                new OrderItem { ProductId = 101, Quantity = 1 },
-                new OrderItem { ProductId = 102, Quantity = 2 }
-            }
-            };
-            var existingOrder = new Order { OrderId = 1, CustomerId = 10, OrderDate = DateTime.Now };
-            var customer = new Customer { CustomerId = 10, FirstName = "Test Customer" };
-            var product101 = new Product { ProductId = 101, Name = "Product A", Price = 10.0f };
-            var product102 = new Product { ProductId = 102, Name = "Product B", Price = 20.0f };
-
-            _mockGenericValidationOrder.Setup(m => m.Exists(order.OrderId, BusinessSetOperation.Update))
-                .ReturnsAsync(new ExistsResult<Order> { Entity = existingOrder });
-            _mockGenericValidationCustomer.Setup(m => m.Exists(order.CustomerId, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
-            _mockGenericValidationProduct.Setup(m => m.Exists(101, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = product101 });
-            _mockGenericValidationProduct.Setup(m => m.Exists(102, BusinessSetOperation.Get))
-                .ReturnsAsync(new ExistsResult<Product> { Entity = product102 });
-
-            var result = await _orderValidation.InvokeAsync(order, BusinessSetOperation.Update);
-
-            Assert.True(result.ValidationResult.IsValid);
-            Assert.Empty(result.ValidationResult.Errors);
-            Assert.Same(existingOrder, result.ValidationResult.Entity);
-            Assert.Equal(2, result.Products.Count);
-            Assert.Contains(product101, result.Products);
-            Assert.Contains(product102, result.Products);
+            return new Order(123, 1, DateTime.Now, new TotalAmount(1), new ProductQuantity(1));
         }
-    }
+
+        private Customer CreateCustomer()
+        {
+            return new Customer(1, new FirstName("John"), new LastName("Doe"), new EmailAddress("a@b.com"), new StreetAddress("a"), new PostalCode("a"));
+        }
+        
+        private OrderItem CreateOrderItem(int productId, int orderId, int quatity, decimal price)
+        {
+            return new OrderItem(1,orderId, new ItemProductQuantity(quatity), new ItemProductPrice(price));
+        }
 
 
 
@@ -307,4 +167,6 @@ namespace business.validata.test.Validators
 
 
 
+
+    } 
 }

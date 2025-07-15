@@ -11,6 +11,7 @@ using business.validata.com.Interfaces.Utils;
 using business.validata.com.Interfaces;
 using business.validata.com;
 using business.validata.com.Adaptors;
+using business.validata.com.Interfaces.Adaptors;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +28,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddDbContext<CommandContext>(options => options.UseSqlServer(builder.Configuration.GetConnectionString("validataconnectionstring")));
 builder.Services.AddSingleton<QueryContext>();
 builder.Services.AddTransient(typeof(ICommandRepository<>), typeof(CommandRepository<>));
+
 builder.Services.AddTransient(typeof(ICustomerRepository), typeof(CustomerRepository));
 builder.Services.AddTransient(typeof(IProductRepository), typeof(ProductRepository));
 builder.Services.AddTransient(typeof(IOrderRepository), typeof(OrderRepository));
@@ -38,13 +40,15 @@ builder.Services.AddSingleton<IMetadata, Metadata>(serviceProvider => MetadataFa
 builder.Services.AddTransient<IGenericLambdaExpressions, GenericLambdaExpressions>();
 builder.Services.AddTransient(typeof(IGenericValidation<>), typeof(GenericValidation<>));
 builder.Services.AddTransient(typeof(IStringFieldValidation<>), typeof(StringFieldValidation<>));
-builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 builder.Services.AddTransient<ICustomerValidation, CustomerValidation>();
 builder.Services.AddTransient<ICustomerCommandBusiness, CustomerCommandBusiness>();
 builder.Services.AddTransient<ICustomerQueryBusiness, CustomerQueryBusiness>();
+builder.Services.AddTransient<ICustomerAdaptor, CustomerAdaptor>();
 builder.Services.AddTransient<IProductValidation, ProductValidation>();
 builder.Services.AddTransient<IProductCommandBusiness, ProductCommandBusiness>();
 builder.Services.AddTransient<IProductQueryBusiness, ProductQueryBusiness>();
+builder.Services.AddTransient<IProductAdaptor, ProductAdaptor>();
 builder.Services.AddTransient<IOrderValidation, OrderValidation>();
 builder.Services.AddTransient<IOrderQueryBusiness, OrderQueryBusiness>();
 builder.Services.AddTransient<IOrderCommandBusiness, OrderCommandBusiness>();

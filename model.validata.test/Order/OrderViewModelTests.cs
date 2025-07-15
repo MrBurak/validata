@@ -20,7 +20,7 @@ namespace model.validata.test.Order
             {
                 OrderId = 1,
                 OrderDate = DateTime.UtcNow,
-                TotalAmount = 150.75f,
+                TotalAmount = 150.75m,
                 ProductCount = 3
             };
 
@@ -66,7 +66,7 @@ namespace model.validata.test.Order
                 OrderId = 1,
                 OrderDate = DateTime.UtcNow,
                 
-                TotalAmount = default(float), 
+                TotalAmount = default(decimal), 
                 ProductCount = 5
             };
 
@@ -82,7 +82,7 @@ namespace model.validata.test.Order
             {
                 OrderId = 1,
                 OrderDate = DateTime.UtcNow,
-                TotalAmount = 100.0f,
+                TotalAmount = 100.0m,
               
                 ProductCount = default(int) 
             };

@@ -1,6 +1,6 @@
 ﻿
 
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 
 namespace business.validata.com.Interfaces

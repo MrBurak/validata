@@ -1,6 +1,6 @@
 ﻿using business.validata.com.Interfaces.Validators;
 using business.validata.com.Validators.Models;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
 
 
@@ -24,20 +24,25 @@ namespace business.validata.com.Validators
         {
             var orderValidationResult = new OrderValidationResult();
 
+
             var orderExists = await genericValidationOrder.Exists(order.OrderId, businessSetOperation);
-            if (orderExists != null)
+            if (!businessSetOperation.Equals(BusinessSetOperation.Create))
             {
-                if (orderExists.Entity == null)
+                if (orderExists != null)
                 {
-                    orderValidationResult.ValidationResult.AddError(orderExists.Code);
+                    if (orderExists.Entity == null)
+                    {
+                        orderValidationResult.ValidationResult.AddError(orderExists.Code);
+                        return orderValidationResult;
+                    }
+                    orderValidationResult.ValidationResult.Entity = orderExists.Entity;
+
+                }
+                else
+                {
+
                     return orderValidationResult;
                 }
-                orderValidationResult.ValidationResult.Entity = orderExists.Entity;
-
-            }
-            else 
-            {
-                return orderValidationResult;
             }
 
                 var customerExists = await genericValidationCustomer.Exists(order.CustomerId, BusinessSetOperation.Get);
@@ -48,12 +53,15 @@ namespace business.validata.com.Validators
             }
             else 
             {
-                if (orderExists.Entity!.CustomerId != customerExists!.Entity!.CustomerId) 
-                
+                if (!businessSetOperation.Equals(BusinessSetOperation.Create)) 
                 {
-                    orderValidationResult.ValidationResult.AddError("Order belongs to another customer");
-                    return orderValidationResult;
+                    if (orderExists!.Entity!.CustomerId != customerExists!.Entity!.CustomerId)
+                    {
+                        orderValidationResult.ValidationResult.AddError("Order belongs to another customer");
+                        return orderValidationResult;
+                    }
                 }
+               
             }
             if (!order.OrderItems.Any())
             {

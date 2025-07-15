@@ -1,5 +1,5 @@
 ﻿using business.validata.com.Interfaces.Validators;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
@@ -22,15 +22,12 @@ namespace business.validata.com.Validators
         }
 
 
-        public async Task<ValidationResult<Product>> InvokeAsync(Product Product, BusinessSetOperation businessSetOperation)
+        public async Task<ValidationResult<Product>> InvokeAsync(Product product, BusinessSetOperation businessSetOperation)
         {
             
-            if (businessSetOperation == BusinessSetOperation.Create) 
-            {
-                Product.ProductId = 0;
-            }
+            
             var result = new ValidationResult<Product>();
-            var exists = await genericValidation.Exists(Product, businessSetOperation);
+            var exists = await genericValidation.Exists(product, businessSetOperation);
             if (exists != null) 
             {
                 if (exists.Entity == null)
@@ -41,8 +38,21 @@ namespace business.validata.com.Validators
                 result.Entity = exists.Entity;
             }
 
-            var ids = (await repository.GetListAsync(x => x.DeletedOn == null)).Select(x => x.ProductId).ToList();
-            result.AddError(await genericValidation.ValidateStringField(Product, nameof(Product.Name), true, true, ids));
+            
+
+
+            result.AddError(genericValidation.ValidateStringField(product, nameof(Product.Name), true));
+
+            if (result.IsValid) 
+            {
+                var name = product.Name.Value;
+                var items = await repository.GetListAsync(x => x.DeletedOn == null && x.ProductId!=product.ProductId);
+                if (items.Any(x=> x.Name.Value==name)) 
+                {
+                    result.AddError("Product name have to be unique");
+                }
+            }
+
            
             return result;
         }        

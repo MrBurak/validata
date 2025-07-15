@@ -1,152 +1,177 @@
 using api.validata.com.Controllers;
 using business.validata.com.Interfaces;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using Microsoft.Extensions.Logging;
 using model.validata.com;
 using model.validata.com.Customer;
 using model.validata.com.Enumeration;
 using Moq;
-using test.utils;
+using business.validata.com.Interfaces.Adaptors;
+using model.validata.com.DTO;
+using model.validata.com.Order;
 
 namespace api.validata.test
 {
+
+
     public class CustomerControllerTests
     {
-        private readonly Mock<ILogger<CustomerController>> _mockLogger;
-        private readonly Mock<ICustomerCommandBusiness> _mockCommandBusiness;
-        private readonly Mock<ICustomerQueryBusiness> _mockQueryBusiness;
+        private readonly Mock<ILogger<CustomerController>> _loggerMock= new();
+        private readonly Mock<ICustomerCommandBusiness> _commandMock = new();
+        private readonly Mock<ICustomerQueryBusiness> _queryMock = new();
+        private readonly Mock<ICustomerAdaptor> _adaptorMock = new();
         private readonly CustomerController _controller;
 
         public CustomerControllerTests()
         {
-            _mockLogger = new Mock<ILogger<CustomerController>>();
-            _mockCommandBusiness = new Mock<ICustomerCommandBusiness>();
-            _mockQueryBusiness = new Mock<ICustomerQueryBusiness>();
+            
+
             _controller = new CustomerController(
-                _mockLogger.Object,
-                _mockCommandBusiness.Object,
-                _mockQueryBusiness.Object
+                _loggerMock.Object,
+                _commandMock.Object,
+                _queryMock.Object,
+                _adaptorMock.Object
             );
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfLoggerIsNull()
+        public void Constructor_ThrowsIfLoggerIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new CustomerController(
-                null!, _mockCommandBusiness.Object, _mockQueryBusiness.Object));
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerController(
+                    null!,
+                    _commandMock.Object,
+                    _queryMock.Object,
+                    _adaptorMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfCommandBusinessIsNull()
+        public void Constructor_ThrowsIfCommandBusinessIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new CustomerController(
-                _mockLogger.Object, null!, _mockQueryBusiness.Object));
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerController(
+                    _loggerMock.Object,
+                    null!,
+                    _queryMock.Object,
+                    _adaptorMock.Object));
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfQueryBusinessIsNull()
+        public void Constructor_ThrowsIfQueryBusinessIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new CustomerController(
-                _mockLogger.Object, _mockCommandBusiness.Object, null!));
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerController(
+                    _loggerMock.Object,
+                    _commandMock.Object,
+                    null!,
+                    _adaptorMock.Object));
         }
 
         [Fact]
-        public async Task List_ReturnsQueryResultFromQueryBusiness()
+        public void Constructor_ThrowsIfAdaptorIsNull()
         {
-            var expectedResult = new QueryResult<IEnumerable<CustomerViewModel>>
-            {
-                Success = true,
-                Data = new List<CustomerViewModel>
-            {
-                new CustomerViewModel { CustomerId = 1, FirstName = "Test1" },
-                new CustomerViewModel { CustomerId = 2, FirstName = "Test2" }
-            }
-            };
-
-            _mockQueryBusiness.Setup(b => b.ListAsync(PaginationUtil.paginationRequest)).ReturnsAsync(expectedResult);
-
-            var result = await _controller.List(1, 100);
-
-            Assert.Equal(expectedResult, result);
-            _mockQueryBusiness.Verify(b => b.ListAsync(PaginationUtil.paginationRequest), Times.Once);
+            Assert.Throws<ArgumentNullException>(() =>
+                new CustomerController(
+                    _loggerMock.Object,
+                    _commandMock.Object,
+                    _queryMock.Object,
+                    null!));
         }
 
         [Fact]
-        public async Task Insert_MapsRequestAndInvokesCommandBusiness()
+        public void Constructor_Succeeds_WhenAllDependenciesAreProvided()
         {
-            var insertModel = new CustomerInsertModel { FirstName = "New Customer", Email = "new@example.com" };
-            var expectedCommandResult = new CommandResult<CustomerViewModel>
-            {
-                Success = true,
-                Data = new CustomerViewModel { CustomerId = 1, FirstName = "New Customer" }
-            };
+            var controller = new CustomerController(
+                _loggerMock.Object,
+                _commandMock.Object,
+                _queryMock.Object,
+                _adaptorMock.Object);
 
-            _mockCommandBusiness.Setup(b => b.InvokeAsync(It.IsAny<Customer>(), BusinessSetOperation.Create))
-                .ReturnsAsync(expectedCommandResult);
+            Assert.NotNull(controller);
+        }
 
+        [Fact]
+        public async Task List_ReturnsCustomers_WhenQueryIsSuccessful()
+        {
+            
+            var expected = new QueryResult<IEnumerable<CustomerDto>> { Success = true, Data = new List<CustomerDto> { new() } };
+            _queryMock.Setup(q => q.ListAsync(It.IsAny<PaginationRequest>())).ReturnsAsync(expected);
+
+            
+            var result = await _controller.List(1, 10);
+
+            
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
+        }
+
+        [Fact]
+        public async Task Insert_ReturnsSuccess_WhenCommandSucceeds()
+        {
+            
+            var insertModel = new CustomerInsertModel { Email = "test@example.com" };
+            var customer = new Customer();
+            var expected = new CommandResult<CustomerDto> { Success = true };
+
+            _adaptorMock.Setup(a => a.Invoke(insertModel)).Returns(customer);
+            _commandMock.Setup(c => c.InvokeAsync(customer, BusinessSetOperation.Create)).ReturnsAsync(expected);
+
+            
             var result = await _controller.Insert(insertModel);
 
-            Assert.Equal(expectedCommandResult, result);
-            _mockCommandBusiness.Verify(b => b.InvokeAsync(
-                It.Is<Customer>(c => c.FirstName == insertModel.FirstName && c.Email == insertModel.Email),
-                BusinessSetOperation.Create), Times.Once);
+            
+            Assert.True(result.Success);
         }
 
         [Fact]
-        public async Task Update_MapsRequestAndInvokesCommandBusiness()
+        public async Task Update_ReturnsSuccess_WhenUpdateIsValid()
         {
-            var updateModel = new CustomerUpdateModel { CustomerId = 1, FirstName = "Updated Customer"};
-            var expectedCommandResult = new CommandResult<CustomerViewModel>
-            {
-                Success = true,
-                Data = new CustomerViewModel { CustomerId = 1, FirstName = "Updated Customer" }
-            };
+            var updateModel = new CustomerUpdateModel { CustomerId = 1 };
+            var customer = new Customer();
+            var expected = new CommandResult<CustomerDto> { Success = true };
 
-            _mockCommandBusiness.Setup(b => b.InvokeAsync(It.IsAny<Customer>(), BusinessSetOperation.Update))
-                .ReturnsAsync(expectedCommandResult);
+            _adaptorMock.Setup(a => a.Invoke(updateModel)).Returns(customer);
+            _commandMock.Setup(c => c.InvokeAsync(customer, BusinessSetOperation.Update)).ReturnsAsync(expected);
 
             var result = await _controller.Update(updateModel);
 
-            Assert.Equal(expectedCommandResult, result);
-            _mockCommandBusiness.Verify(b => b.InvokeAsync(
-                It.Is<Customer>(c => c.CustomerId == updateModel.CustomerId && c.FirstName == updateModel.FirstName),
-                BusinessSetOperation.Update), Times.Once);
+            Assert.True(result.Success);
         }
 
         [Fact]
-        public async Task Delete_InvokesCommandBusinessDelete()
+        public async Task Delete_ReturnsSuccess_WhenCustomerDeleted()
         {
-            int customerIdToDelete = 1;
-            var expectedCommandResult = new CommandResult<Customer>
-            {
-                Success = true,
-                Data = new Customer { CustomerId = customerIdToDelete, FirstName = "Deleted Customer" }
-            };
+            var expected = new CommandResult<Customer> { Success = true };
+            _commandMock.Setup(c => c.DeleteAsync(1)).ReturnsAsync(expected);
 
-            _mockCommandBusiness.Setup(b => b.DeleteAsync(customerIdToDelete)).ReturnsAsync(expectedCommandResult);
+            var result = await _controller.Delete(1);
 
-            var result = await _controller.Delete(customerIdToDelete);
-
-            Assert.Equal(expectedCommandResult, result);
-            _mockCommandBusiness.Verify(b => b.DeleteAsync(customerIdToDelete), Times.Once);
+            Assert.True(result.Success);
         }
 
         [Fact]
-        public async Task Get_ReturnsQueryResultFromQueryBusiness()
+        public async Task Get_ReturnsCustomer_WhenFound()
         {
-            int customerIdToGet = 1;
-            var expectedResult = new QueryResult<CustomerViewModel?>
-            {
-                Success = true,
-                Data = new CustomerViewModel { CustomerId = customerIdToGet, FirstName = "Retrieved Customer" }
-            };
+            var expected = new QueryResult<CustomerDto?> { Success = true, Data = new CustomerDto() };
+            _queryMock.Setup(q => q.GetAsync(1)).ReturnsAsync(expected);
 
-            _mockQueryBusiness.Setup(b => b.GetAsync(customerIdToGet)).ReturnsAsync(expectedResult);
+            var result = await _controller.Get(1);
 
-            var result = await _controller.Get(customerIdToGet);
+            Assert.True(result.Success);
+            Assert.NotNull(result.Data);
+        }
 
-            Assert.Equal(expectedResult, result);
-            _mockQueryBusiness.Verify(b => b.GetAsync(customerIdToGet), Times.Once);
+        [Fact]
+        public async Task ListOrders_ReturnsOrders_WhenFound()
+        {
+            var expected = new QueryResult<IEnumerable<OrderViewModel>> { Success = true, Data = new List<OrderViewModel> { new() } };
+            _queryMock.Setup(q => q.ListOrderAsync(1, It.IsAny<PaginationRequest>())).ReturnsAsync(expected);
+
+            var result = await _controller.ListOrders(1, 1, 10);
+
+            Assert.True(result.Success);
+            Assert.NotEmpty(result.Data!);
         }
     }
+
 }

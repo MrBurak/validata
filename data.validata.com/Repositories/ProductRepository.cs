@@ -1,15 +1,15 @@
 ﻿using Dapper;
 using data.validata.com.Interfaces.Repository;
-using data.validata.com.Entities;
 using data.validata.com.Context;
 using model.validata.com;
+using model.validata.com.Entities;
 
 
 namespace data.validata.com.Repositories
 {
     public class ProductRepository : IProductRepository
     {
-        private string defaultSchema = DbConsts.DefaultSchema;
+        private string defaultSchema = Constants.DefaultSchema;
         private readonly QueryContext context;
         public ProductRepository(QueryContext context)
         {

@@ -1,5 +1,6 @@
 ﻿using model.validata.com.Enumeration;
 using model.validata.com.Validators;
+using System.Linq.Expressions;
 
 namespace business.validata.com.Interfaces.Validators
 {
@@ -7,6 +8,6 @@ namespace business.validata.com.Interfaces.Validators
     {
         Task<ExistsResult<TEntity>?> Exists(TEntity entity, BusinessSetOperation businessSetOperation);
         Task<ExistsResult<TEntity>?> Exists(int id, BusinessSetOperation businessSetOperation);
-        Task<string?> ValidateStringField(TEntity entity, string fieldName, bool isRegex, bool isUnique, List<int>? id = null, string? regex = null);
+        string? ValidateStringField(TEntity entity, string fieldName, bool isRegex, string? regex = null);
     }
 }

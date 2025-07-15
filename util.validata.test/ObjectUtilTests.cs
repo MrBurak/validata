@@ -4,73 +4,7 @@ namespace util.validata.test
 {
     public class ObjectUtilTests
     {
-        [Fact]
-        public void GetValue_ShouldReturnCorrectStringValue()
-        {
-            
-            var obj = new TestObject("hello", 123, true);
-
-            
-            string actual = ObjectUtil.GetValue(obj, "StringProperty");
-
-            
-            Assert.Equal("hello", actual);
-        }
-
-        [Fact]
-        public void GetValue_ShouldReturnEmptyStringForNonExistingProperty()
-        {
-            
-            var obj = new TestObject("hello", 123, true);
-
-            
-            string actual = ObjectUtil.GetValue(obj, "NonExistentProperty");
-
-            
-            Assert.Equal("", actual);
-        }
-
-        [Fact]
-        public void GetValue_ShouldReturnEmptyStringForNullObject()
-        {
-            
-            TestObject? obj = null;
-
-            
-            string actual = ObjectUtil.GetValue(obj!, "StringProperty"); 
-
-            
-            Assert.Equal("", actual);
-        }
-
-        [Fact]
-        public void GetValue_ShouldReturnEmptyStringForNullPropertyValue()
-        {
-            var obj = new TestObject("hello", 123, true) { NullProperty = null };
-
-            string actual = ObjectUtil.GetValue(obj, "NullProperty");
-
-            Assert.Equal("", actual);
-        }
-
-        [Fact]
-        public void GetValue_ShouldReturnEmptyStringForNonStringProperty()
-        {
-            var obj = new TestObject("hello", 123, true);
-
-            Assert.Throws<InvalidCastException>(() => ObjectUtil.GetValue(obj, "IntProperty"));
-            Assert.Throws<InvalidCastException>(() => ObjectUtil.GetValue(obj, "BoolProperty"));
-        }
-
-        [Fact]
-        public void GetValue_ShouldReturnEmptyStringForPrivateProperty()
-        {
-            var obj = new TestObject("hello", 123, true);
-
-            string actual = ObjectUtil.GetValue(obj, "PrivateProperty");
-
-            Assert.Equal("private", actual); 
-        }
+        
 
         
         [Fact]
@@ -155,65 +89,7 @@ namespace util.validata.test
         }
 
         
-        [Fact]
-        public void ConvertObj_ShouldConvertSourceToTargetWithMatchingProperties()
-        {
-            var source = new SourceObject
-            {
-                Id = 101,
-                Name = "Sample Name",
-                CreatedDate = new DateTime(2023, 1, 15)
-            };
-
-            var target = ObjectUtil.ConvertObj<TargetObject, SourceObject>(source);
-
-            Assert.NotNull(target);
-            Assert.Equal(source.Id, target.Id);
-            Assert.Equal(source.Name, target.Name);
-            Assert.Equal(source.CreatedDate, target.CreatedDate);
-            Assert.Equal(0, target.Price); 
-        }
-
-        [Fact]
-        public void ConvertObj_ShouldHandleMissingPropertiesInSource()
-        {
-            var source = new SourceObject
-            {
-                Id = 202,
-                Name = "Another Name"
-            };
-
-            var target = ObjectUtil.ConvertObj<TargetObject, SourceObject>(source);
-
-            Assert.NotNull(target);
-            Assert.Equal(source.Id, target.Id);
-            Assert.Equal(source.Name, target.Name);
-            Assert.Equal(default(DateTime), target.CreatedDate); 
-        }
-
-        [Fact]
-        public void ConvertObj_ShouldHandleNullSourceObject()
-        {
-            SourceObject? source = null;
-
-           
-            var target = ObjectUtil.ConvertObj<TargetObject, SourceObject>(source!);
-            Assert.Null(target);
-        }
-
-        [Fact]
-        public void ConvertObj_ShouldHandleDifferentTypesWhereConversionMakesSense()
-        {
-            TestObject source =  new TestObject("hello", 123, true); 
-            
-
-            var target = ObjectUtil.ConvertObj<TestObject, TestObject>(source);
-
-            Assert.Equal(source.IntProperty, target.IntProperty);
-            Assert.Equal(source.StringProperty, target.StringProperty);
-            Assert.Equal(source.BoolProperty, target.BoolProperty);
-
-        }
+       
     }
 
     public class TestObject

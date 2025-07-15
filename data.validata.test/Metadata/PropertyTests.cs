@@ -1,4 +1,5 @@
 ﻿using data.validata.com.Entities;
+using model.validata.com.Entities;
 
 namespace data.validata.test.Metadata
 {

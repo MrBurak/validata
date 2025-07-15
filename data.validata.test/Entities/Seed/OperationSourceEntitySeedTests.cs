@@ -1,4 +1,4 @@
-﻿using data.validata.com.Entities;
+﻿using model.validata.com.Entities;
 using data.validata.com.Entities.Seed;
 using Microsoft.EntityFrameworkCore;
 using model.validata.com.Enumeration;

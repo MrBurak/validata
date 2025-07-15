@@ -1,6 +1,7 @@
 ﻿using business.validata.com.Validators.Models;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using model.validata.com.Validators;
+using model.validata.com.ValueObjects.Product;
 
 
 namespace business.validata.test.Validators.Models
@@ -61,8 +62,8 @@ namespace business.validata.test.Validators.Models
         {
             
             var result = new OrderValidationResult();
-            var product1 = new Product { ProductId = 101, Name = "Laptop", Price = 12f };
-            var product2 = new Product { ProductId = 102, Name = "Mouse", Price = 25f };
+            var product1 = new Product( 101, new ProductName("Laptop"), new ProductPrice(12));
+            var product2 = new Product (102, new ProductName("Mouse"), new ProductPrice(25));
 
             
             result.Products.Add(product1);
@@ -80,9 +81,9 @@ namespace business.validata.test.Validators.Models
             
             var result = new OrderValidationResult();
             var newProductList = new List<Product>
-        {
-            new Product { ProductId = 201, Name = "Keyboard", Price = 75f }
-        };
+            {
+                new Product(201, new ProductName("Keyboard"), new ProductPrice(75))
+            };
 
             
             result.Products = newProductList;

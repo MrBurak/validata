@@ -1,5 +1,6 @@
 ﻿using data.validata.com.Entities;
 using data.validata.com.Interfaces.Metadata;
+using model.validata.com.Entities;
 using System.Reflection;
 
 namespace data.validata.com.Metadata

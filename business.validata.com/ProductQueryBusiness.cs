@@ -3,8 +3,7 @@ using data.validata.com.Interfaces.Repository;
 using model.validata.com.Product;
 using Microsoft.Extensions.Logging;
 using model.validata.com;
-using util.validata.com;
-using data.validata.com.Entities;
+using business.validata.com.Interfaces.Adaptors;
 
 
 namespace business.validata.com
@@ -13,12 +12,15 @@ namespace business.validata.com
     {
         private readonly IProductRepository repository;
         private readonly ILogger<ProductQueryBusiness> logger;
-        public ProductQueryBusiness(IProductRepository repository, ILogger<ProductQueryBusiness> logger)
+        private readonly IProductAdaptor adaptor;
+        public ProductQueryBusiness(IProductRepository repository, ILogger<ProductQueryBusiness> logger, IProductAdaptor adaptor)
         {
             ArgumentNullException.ThrowIfNull(repository);
             ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(adaptor);
             this.repository = repository;
             this.logger = logger;
+            this.adaptor = adaptor;
         }
         public async Task<QueryResult<IEnumerable<ProductModel>>> ListAsync(PaginationRequest paginationRequest)
         {
@@ -27,7 +29,7 @@ namespace business.validata.com
             try
             {
                 var products = await repository.GetAllAsync(paginationRequest);
-                queryResult.Data = ObjectUtil.ConvertObj<IEnumerable<ProductModel>, IEnumerable<Product>>(products);
+                queryResult.Data = adaptor.Invoke(products);
                 queryResult.Success = true;
                 logger.LogInformation("Listed {Count} products.", queryResult.Data?.Count() ?? 0);
             }
@@ -54,7 +56,7 @@ namespace business.validata.com
                     queryResult.Success = false;
                     return queryResult;
                 }
-                queryResult.Data = ObjectUtil.ConvertObj<ProductModel, Product>(product);
+                queryResult.Data = adaptor.Invoke(product);
                 queryResult.Success = true;
                 logger.LogInformation("Product details retrieved for ProductId={ProductId}", id);
             }

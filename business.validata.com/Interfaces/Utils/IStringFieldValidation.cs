@@ -6,6 +6,6 @@ namespace business.validata.com.Interfaces.Utils
 {
     public interface IStringFieldValidation<TEntity>
     {
-        Task<string?> InvokeAsnc(StringField<TEntity> stringField);
+        string? Invoke(StringField<TEntity> stringField);
     }
 }

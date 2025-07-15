@@ -1,12 +1,12 @@
-﻿using data.validata.com.Entities;
+﻿using model.validata.com.DTO;
 
 
 namespace data.validata.com.Interfaces.Repository
 {
     public interface IOrderItemRepository
     {
-        Task<OrderItem?> GetByIdAsync(int orderItemId, int orderId);
+        Task<OrderItemDto?> GetByIdAsync(int orderItemId, int orderId);
 
-        Task<IEnumerable<OrderItem>> GetAllAsync(int orderId);
+        Task<IEnumerable<OrderItemDto>> GetAllAsync(int orderId);
     }
 }

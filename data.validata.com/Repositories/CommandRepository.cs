@@ -1,13 +1,14 @@
 ﻿using data.validata.com.Context;
 using data.validata.com.Interfaces.Repository;
 using Microsoft.EntityFrameworkCore;
+using model.validata.com.Entities;
 using System.Data;
 using System.Linq.Expressions;
 
 namespace data.validata.com.Repositories
 {
     public class CommandRepository<T> : ICommandRepository<T>
-        where T : class, new()
+        where T :  BaseEntity, new()
     {
 
 
@@ -52,21 +53,21 @@ namespace data.validata.com.Repositories
 
         public async Task<T> AddAsync(T entity)
         {
-            validataDbContext.Set<T>()
-                .Add(entity);
-
-            await validataDbContext.SaveChangesAsync();
+            await validataDbContext.Set<T>()
+                .AddAsync(entity);
 
             return entity;
         }
 
-        public async Task<bool> DeleteAsync(Expression<Func<T, bool>> query)
+        public async Task DeleteAsync(Expression<Func<T, bool>> query)
         {
             IList<T> entites = await GetListAsync(query);
 
-            validataDbContext.RemoveRange(entites);
+            foreach (var item in entites)
+            {
+                item.MarkAsDeleted();
+            }
 
-            return validataDbContext.SaveChanges() != 0;
         }
 
         public async Task UpdateAsync(Expression<Func<T, bool>> filterExpression, List<Action<T>> properties)
@@ -79,7 +80,6 @@ namespace data.validata.com.Repositories
             {
                 recordsToBeUpdated.ForEach(property);
             }
-            await validataDbContext.SaveChangesAsync();
         }
 
        

@@ -1,4 +1,6 @@
-﻿namespace model.validata.com.Order
+﻿using model.validata.com.DTO;
+
+namespace model.validata.com.Order
 {
     public class OrderDetailViewModel:OrderViewModel
     {

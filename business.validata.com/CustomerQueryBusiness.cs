@@ -1,11 +1,10 @@
 ﻿using business.validata.com.Interfaces;
 using data.validata.com.Interfaces.Repository;
-using model.validata.com.Customer;
 using Microsoft.Extensions.Logging;
 using model.validata.com;
-using util.validata.com;
-using data.validata.com.Entities;
 using model.validata.com.Order;
+using business.validata.com.Interfaces.Adaptors;
+using model.validata.com.DTO;
 
 
 namespace business.validata.com
@@ -15,27 +14,31 @@ namespace business.validata.com
         private readonly ICustomerRepository repository;
         private readonly ILogger<CustomerQueryBusiness> logger;
         private readonly IOrderQueryBusiness orderQueryBusiness;
+        private readonly ICustomerAdaptor customerAdaptor;
         public CustomerQueryBusiness(
             ICustomerRepository repository, 
             ILogger<CustomerQueryBusiness> logger, 
-            IOrderQueryBusiness orderQueryBusiness)
+            IOrderQueryBusiness orderQueryBusiness,
+            ICustomerAdaptor customerAdaptor)
         {
             ArgumentNullException.ThrowIfNull(repository);
             ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(orderQueryBusiness);
+            ArgumentNullException.ThrowIfNull(customerAdaptor);
             this.repository = repository;
             this.orderQueryBusiness = orderQueryBusiness;
             this.logger = logger;
+            this.customerAdaptor = customerAdaptor;
         }
-        public async Task<QueryResult<IEnumerable<CustomerViewModel>>> ListAsync(PaginationRequest paginationRequest)
+        public async Task<QueryResult<IEnumerable<CustomerDto>>> ListAsync(PaginationRequest paginationRequest)
         {
             logger.LogInformation("Fetching customers. PageNumber: {PageNumber}, PageSize: {PageSize}", paginationRequest.pageNumber, paginationRequest.pageSize);
-            var queryResult = new QueryResult<IEnumerable<CustomerViewModel>>();
+            var queryResult = new QueryResult<IEnumerable<CustomerDto>>();
 
             try
             {
                 var customers = await repository.GetAllAsync(paginationRequest);
-                queryResult.Data = ObjectUtil.ConvertObj<IEnumerable<CustomerViewModel>, IEnumerable<Customer>>(customers);
+                queryResult.Data = customers;
                 queryResult.Success = true;
 
                 logger.LogInformation("Fetched {Count} customers successfully.", queryResult.Data?.Count() ?? 0);
@@ -50,10 +53,10 @@ namespace business.validata.com
             return queryResult;
         }
 
-        public async Task<QueryResult<CustomerViewModel?>> GetAsync(int id)
+        public async Task<QueryResult<CustomerDto?>> GetAsync(int id)
         {
             logger.LogInformation("Fetching customer with ID: {CustomerId}", id);
-            var queryResult = new QueryResult<CustomerViewModel?>();
+            var queryResult = new QueryResult<CustomerDto?>();
 
             try
             {
@@ -66,7 +69,7 @@ namespace business.validata.com
                     return queryResult;
                 }
 
-                queryResult.Data = ObjectUtil.ConvertObj<CustomerViewModel, Customer>(customer);
+                queryResult.Data = customer;
                 queryResult.Success = true;
 
                 logger.LogInformation("Fetched customer with ID: {CustomerId} successfully.", id);

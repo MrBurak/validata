@@ -40,17 +40,16 @@ namespace business.validata.com.Validators
             return new ExistsResult<TEntity> { Entity = exists };
         }
 
-        public async Task<string?> ValidateStringField(TEntity entity, string fieldName, bool isRegex, bool isUnique, List<int>? id=null, string? regex = null)
+        public string? ValidateStringField(TEntity entity, string fieldName, bool isRegex, string? regex = null)
         {
             var stringfield = new StringField<TEntity>
             {
                 Entity = entity,
                 CheckRegex = isRegex,
-                CheckUnique = isUnique,
                 Field = fieldName, 
                 Regex = regex,
             };
-            return await stringFieldValidation.InvokeAsnc(stringfield);
+            return stringFieldValidation.Invoke(stringfield);
            
         }
     }

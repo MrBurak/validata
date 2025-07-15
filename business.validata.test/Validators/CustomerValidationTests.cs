@@ -1,220 +1,144 @@
 ﻿using business.validata.com.Interfaces.Validators;
 using business.validata.com.Validators;
-using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using FluentAssertions;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
+using model.validata.com.ValueObjects.Customer;
 using Moq;
+using System.Linq.Expressions;
 
 
 namespace business.validata.test.Validators
 {
+
+
     public class CustomerValidationTests
     {
-        private readonly Mock<IGenericValidation<Customer>> _mockGenericValidation;
-        private readonly Mock<ICommandRepository<Customer>> _mockRepository;
-        private readonly CustomerValidation _customerValidation;
+        private readonly Mock<IGenericValidation<Customer>> genericValidationMock = new();
+        private readonly Mock<ICommandRepository<Customer>> repositoryMock = new();
+
+        private readonly CustomerValidation sut;
 
         public CustomerValidationTests()
         {
-            _mockGenericValidation = new Mock<IGenericValidation<Customer>>();
-            _mockRepository = new Mock<ICommandRepository<Customer>>();
-            _customerValidation = new CustomerValidation(_mockGenericValidation.Object, _mockRepository.Object);
-
-            
-            _mockGenericValidation.Setup(m => m.Exists(It.IsAny<Customer>(), It.IsAny<BusinessSetOperation>()))
-                .ReturnsAsync(new  ExistsResult<Customer> { Entity = new Customer() }); 
-
-            _mockGenericValidation.Setup(m => m.ValidateStringField(
-                    It.IsAny<Customer>(),
-                    It.IsAny<string>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<List<int>>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync("");
-
-            _mockRepository.Setup(m => m.GetListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Customer, bool>>>()))
-                .ReturnsAsync(new List<Customer>()); 
+            sut = new CustomerValidation(genericValidationMock.Object, repositoryMock.Object);
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfGenericValidationIsNull()
+        public void Constructor_ThrowsArgumentNullException_WhenGenericValidationIsNull()
         {
-            IGenericValidation<Customer> nullGenericValidation = null!;
-            var mockRepository = new Mock<ICommandRepository<Customer>>();
-
-            Assert.Throws<ArgumentNullException>(() => new CustomerValidation(nullGenericValidation, mockRepository.Object));
+            var ex = Assert.Throws<ArgumentNullException>(() => new CustomerValidation(null!, repositoryMock.Object));
+            Assert.Contains("genericValidation", ex.ParamName);
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfRepositoryIsNull()
+        public void Constructor_ThrowsArgumentNullException_WhenRepositoryIsNull()
         {
-            var mockGenericValidation = new Mock<IGenericValidation<Customer>>();
-            Assert.Throws<ArgumentNullException>(() => new CustomerValidation(mockGenericValidation.Object, null!));
+            var ex = Assert.Throws<ArgumentNullException>(() => new CustomerValidation(genericValidationMock.Object, null!));
+            Assert.Contains("repository", ex.ParamName);
         }
 
         [Fact]
-        public async Task InvokeAsync_CreateOperation_SetsCustomerIdToZero()
+        public void Constructor_Succeeds_WhenDependenciesAreProvided()
         {
-            var customer = new Customer { CustomerId = 123 }; 
-
-            await _customerValidation.InvokeAsync(customer, BusinessSetOperation.Create);
-
-            Assert.Equal(0, customer.CustomerId);
+            var validation = new CustomerValidation(genericValidationMock.Object, repositoryMock.Object);
+            Assert.NotNull(validation);
         }
 
         [Fact]
-        public async Task InvokeAsync_UpdateOperation_DoesNotSetCustomerIdToZero()
+        public async Task Should_ReturnError_IfCustomerEntityDoesNotExist()
         {
-            
-            var customer = new Customer { CustomerId = 123 }; 
+            var customer = CreateCustomer();
 
-            
-            await _customerValidation.InvokeAsync(customer, BusinessSetOperation.Update);
-
-            
-            Assert.Equal(123, customer.CustomerId); 
-        }
-
-        [Fact]
-        public async Task InvokeAsync_ExistsReturnsNullEntity_AddsErrorAndReturnsImmediately()
-        {
-            
-            var customer = new Customer();
-            var expectedErrorCode = "No record found";
-            _mockGenericValidation.Setup(m => m.Exists(It.IsAny<Customer>(), It.IsAny<BusinessSetOperation>()))
+            genericValidationMock.Setup(g => g.Exists(customer, BusinessSetOperation.Update))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = null });
 
-            
-            var result = await _customerValidation.InvokeAsync(customer, BusinessSetOperation.Update); 
+            var result = await sut.InvokeAsync(customer, BusinessSetOperation.Update);
 
-            
-            Assert.False(result.IsValid);
-            Assert.Contains(expectedErrorCode, result.Errors);
-            Assert.Null(result.Entity); 
-            _mockGenericValidation.Verify(m => m.ValidateStringField(
-                It.IsAny<Customer>(), It.IsAny<string>(), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<List<int>>(), It.IsAny<string>()), Times.Never);
+            result.IsValid.Should().BeFalse();
+            result.Errors.Should().Contain("No record found");
         }
 
         [Fact]
-        public async Task InvokeAsync_ExistsReturnsEntity_SetsEntityInValidationResult()
+        public async Task Should_ReturnFieldValidationErrors()
         {
-            
-            var customer = new Customer();
-            var existingCustomer = new Customer { CustomerId = 1, FirstName = "Existing" };
-            _mockGenericValidation.Setup(m => m.Exists(It.IsAny<Customer>(), It.IsAny<BusinessSetOperation>()))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = existingCustomer });
+            var customer = CreateCustomer();
 
-            
-            var result = await _customerValidation.InvokeAsync(customer, BusinessSetOperation.Update);
-
-            
-            Assert.Same(existingCustomer, result.Entity);
-        }
-
-        [Theory]
-        [InlineData("FirstName")]
-        [InlineData("LastName")]
-        [InlineData("Pobox")]
-        public async Task InvokeAsync_AlwaysValidatesRequiredStringFields(string fieldName)
-        {
-            
-            var customer = new Customer();
-
-            
-            await _customerValidation.InvokeAsync(customer, BusinessSetOperation.Create);
-
-            
-            _mockGenericValidation.Verify(m => m.ValidateStringField(
-                customer, fieldName, true, false, null, null), Times.Once);
-        }
-
-       
-
-        [Fact]
-        public async Task InvokeAsync_UpdateOperation_DoesNotValidateEmailUniqueness()
-        {
-            
-            var customer = new Customer();
-
-            
-            await _customerValidation.InvokeAsync(customer, BusinessSetOperation.Update);
-
-            
-            _mockRepository.Verify(m => m.GetListAsync(It.IsAny<System.Linq.Expressions.Expression<Func<Customer, bool>>>()), Times.Never);
-            _mockGenericValidation.Verify(m => m.ValidateStringField(
-                customer,
-                nameof(Customer.Email),
-                It.IsAny<bool>(),
-                true, 
-                It.IsAny<List<int>>(),
-                It.IsAny<string>()), Times.Never); 
-        }
-
-        [Fact]
-        public async Task InvokeAsync_AllValidationsPass_ReturnsValidResult()
-        {
-            
-            var customer = new Customer { FirstName = "John", LastName = "Doe", Email = "john.doe@example.com", Pobox = "12345" };
-
-            _mockGenericValidation.Setup(m => m.Exists(It.IsAny<Customer>(), It.IsAny<BusinessSetOperation>()))
-                .ReturnsAsync(new ExistsResult<Customer> { Entity = customer }); 
-
-            _mockGenericValidation.Setup(m => m.ValidateStringField(
-                    It.IsAny<Customer>(),
-                    It.IsAny<string>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<bool>(),
-                    It.IsAny<List<int>>(),
-                    It.IsAny<string>()))
-                .ReturnsAsync(""); 
-
-            
-            var result = await _customerValidation.InvokeAsync(customer, BusinessSetOperation.Create);
-
-            
-            Assert.True(result.IsValid);
-            Assert.Empty(result.Errors);
-            Assert.Equal(customer, result.Entity);
-        }
-
-        [Fact]
-        public async Task InvokeAsync_ValidationErrorsOccur_ReturnsInvalidResultWithErrors()
-        {
-            
-            var customer = new Customer { FirstName = "", LastName = "Doe", Email = "invalid-email", Pobox = "12345" };
-            var firstNameError = "FirstName is required.";
-            var emailError = "Email format is invalid or not unique.";
-
-            _mockGenericValidation.Setup(m => m.Exists(It.IsAny<Customer>(), It.IsAny<BusinessSetOperation>()))
+            genericValidationMock.Setup(g => g.Exists(customer, BusinessSetOperation.Update))
                 .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
 
-            _mockGenericValidation.Setup(m => m.ValidateStringField(
-                customer, nameof(Customer.FirstName), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<List<int>>(), It.IsAny<string>()))
-                .ReturnsAsync(firstNameError);
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.FirstName), true, null))
+                .Returns("First name is required");
 
-            _mockGenericValidation.Setup(m => m.ValidateStringField(
-                customer, nameof(Customer.Email), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<List<int>>(), It.IsAny<string>()))
-                .ReturnsAsync(emailError);
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.LastName), true, null))
+                .Returns("Last name is required");
 
-            _mockGenericValidation.Setup(m => m.ValidateStringField(
-                customer, nameof(Customer.LastName), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<List<int>>(), It.IsAny<string>()))
-                .ReturnsAsync(""); 
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.Pobox), true, null))
+                .Returns("PO Box is required");
 
-            _mockGenericValidation.Setup(m => m.ValidateStringField(
-                customer, nameof(Customer.Pobox), It.IsAny<bool>(), It.IsAny<bool>(), It.IsAny<List<int>>(), It.IsAny<string>()))
-                .ReturnsAsync(""); 
+            var result = await sut.InvokeAsync(customer, BusinessSetOperation.Update);
 
+            result.IsValid.Should().BeFalse();
+            result.Errors.Should().Contain("First name is required");
+            result.Errors.Should().Contain("Last name is required");
+            result.Errors.Should().Contain("PO Box is required");
+        }
 
-            
-            var result = await _customerValidation.InvokeAsync(customer, BusinessSetOperation.Create);
+        [Fact]
+        public async Task Should_ReturnError_IfEmailIsNotUnique()
+        {
+            var customer = CreateCustomer("existing@example.com");
 
-            
-            Assert.False(result.IsValid);
-            Assert.Equal(2, result.Errors.Count); 
-            Assert.Contains(firstNameError, result.Errors);
-            Assert.Contains(emailError, result.Errors);
+            genericValidationMock.Setup(g => g.Exists(customer, BusinessSetOperation.Create))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
+
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.FirstName), true, null)).Returns((string?)null);
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.LastName), true, null)).Returns((string?)null);
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.Pobox), true, null)).Returns((string?)null);
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.Email), true, It.IsAny<string>()))
+                .Returns((string?)null);
+
+            repositoryMock.Setup(r => r.GetListAsync(It.IsAny<Expression<Func<Customer, bool>>>()))
+                .ReturnsAsync(new List<Customer>
+                {
+                CreateCustomer("existing@example.com", 99) 
+                });
+
+            var result = await sut.InvokeAsync(customer, BusinessSetOperation.Create);
+
+            result.IsValid.Should().BeFalse();
+            result.Errors.Should().Contain("Customer email have to be unique");
+        }
+
+        [Fact]
+        public async Task Should_PassValidation_WhenValid()
+        {
+            var customer = CreateCustomer("unique@example.com");
+
+            genericValidationMock.Setup(g => g.Exists(customer, BusinessSetOperation.Create))
+                .ReturnsAsync(new ExistsResult<Customer> { Entity = customer });
+
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.FirstName), true, null)).Returns((string?)null);
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.LastName), true, null)).Returns((string?)null);
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.Pobox), true, null)).Returns((string?)null);
+            genericValidationMock.Setup(g => g.ValidateStringField(customer, nameof(Customer.Email), true, It.IsAny<string>()))
+                .Returns((string?)null);
+
+            repositoryMock.Setup(r => r.GetListAsync(It.IsAny<Expression<Func<Customer, bool>>>()))
+                .ReturnsAsync(new List<Customer>()); 
+
+            var result = await sut.InvokeAsync(customer, BusinessSetOperation.Create);
+
+            result.IsValid.Should().BeTrue();
+            result.Errors.Should().BeEmpty();
+        }
+
+        private Customer CreateCustomer(string email = "test@example.com", int id = 1)
+        {
+            return new Customer(id, new FirstName("John"), new LastName("Doe"), new EmailAddress(email), new StreetAddress("Street 1"), new PostalCode("123"));
         }
     }
+
 }

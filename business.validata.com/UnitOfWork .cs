@@ -1,6 +1,6 @@
 ﻿using business.validata.com.Interfaces;
 using data.validata.com.Context;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 
 

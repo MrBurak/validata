@@ -3,9 +3,10 @@ using data.validata.com.Interfaces.Repository;
 using model.validata.com.Order;
 using model.validata.com;
 using util.validata.com;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using business.validata.com.Interfaces.Validators;
 using Microsoft.Extensions.Logging;
+using business.validata.com.Interfaces.Adaptors;
 
 
 namespace business.validata.com
@@ -17,13 +18,16 @@ namespace business.validata.com
         private readonly IProductRepository repositoryProduct;
         private readonly IGenericValidation<Customer> genericValidationCustomer;
         private readonly ILogger<OrderQueryBusiness> logger;
+        private readonly IOrderAdaptor orderAdaptor;
+
         public OrderQueryBusiness
         (
             IOrderRepository repository,
             IOrderItemRepository repositoryItem,
             IProductRepository repositoryProduct,
             IGenericValidation<Customer> genericValidationCustomer,
-            ILogger<OrderQueryBusiness> logger
+            ILogger<OrderQueryBusiness> logger,
+            IOrderAdaptor orderAdaptor
             )
         {
             ArgumentNullException.ThrowIfNull(repository);
@@ -31,11 +35,13 @@ namespace business.validata.com
             ArgumentNullException.ThrowIfNull(repositoryProduct);
             ArgumentNullException.ThrowIfNull(genericValidationCustomer);
             ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(orderAdaptor);
             this.repository = repository;
             this.repositoryItem = repositoryItem;
             this.repositoryProduct = repositoryProduct;
             this.genericValidationCustomer = genericValidationCustomer;
             this.logger = logger;
+            this.orderAdaptor = orderAdaptor;
         }
         public async Task<QueryResult<IEnumerable<OrderViewModel>>> ListAsync(int customerId, PaginationRequest paginationRequest)
         {
@@ -53,7 +59,7 @@ namespace business.validata.com
 
             try
             {
-                var orders = ObjectUtil.ConvertObj<IEnumerable<OrderViewModel>, IEnumerable<Order>>(await repository.GetAllAsync(customerId, paginationRequest)).ToList();
+                var orders = orderAdaptor.Invoke(await repository.GetAllAsync(customerId, paginationRequest)).ToList();
 
                 if (orders.Any())
                 {
@@ -92,7 +98,7 @@ namespace business.validata.com
                     return queryResult;
                 }
 
-                var orderModel = ObjectUtil.ConvertObj<OrderDetailViewModel, Order>(order);
+                var orderModel = await orderAdaptor.InvokeAsync(order);
 
                 var orderItems = (await repositoryItem.GetAllAsync(customerId))
                     .Where(x => x.OrderId == orderId)

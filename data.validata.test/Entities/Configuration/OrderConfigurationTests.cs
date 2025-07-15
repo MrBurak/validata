@@ -1,5 +1,5 @@
 ﻿using data.validata.com.Configuration;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using Microsoft.EntityFrameworkCore;
 using util.validata.com;
 

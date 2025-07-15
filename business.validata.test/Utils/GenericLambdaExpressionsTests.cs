@@ -1,10 +1,16 @@
 ﻿using business.validata.com.Utils;
-using data.validata.com.Entities;
 using data.validata.com.Interfaces.Metadata;
+using model.validata.com.Entities;
 using Moq;
 
 namespace business.validata.test.Utils
 {
+    public class TestEntity : BaseEntity
+    {
+        public int TestEntityId { get; set; }
+        public string? Name { get; set; }
+        public float Price { get; set; }
+    }
     public class GenericLambdaExpressionsTests
     {
         private readonly Mock<IMetadata> _mockMetadata;
@@ -14,32 +20,32 @@ namespace business.validata.test.Utils
         {
             _mockMetadata = new Mock<IMetadata>();
 
-            var mockProductPropertyInfo = typeof(Product).GetProperty("ProductId")!;
-            var mockProductPkProperty = new Mock<IProperty>();
-            mockProductPkProperty.Setup(p => p.PropertyInfo).Returns(mockProductPropertyInfo);
+            var mockTestEntityPropertyInfo = typeof(TestEntity).GetProperty("TestEntityId")!;
+            var mockTestEntityPkProperty = new Mock<IProperty>();
+            mockTestEntityPkProperty.Setup(p => p.PropertyInfo).Returns(mockTestEntityPropertyInfo);
 
-            var mockProductNamePropertyInfo = typeof(Product).GetProperty("Name")!;
-            var mockProductNameProperty = new Mock<IProperty>();
-            mockProductNameProperty.Setup(p => p.PropertyInfo).Returns(mockProductNamePropertyInfo);
+            var mockTestEntityNamePropertyInfo = typeof(TestEntity).GetProperty("Name")!;
+            var mockTestEntityNameProperty = new Mock<IProperty>();
+            mockTestEntityNameProperty.Setup(p => p.PropertyInfo).Returns(mockTestEntityNamePropertyInfo);
 
-            var mockProductPricePropertyInfo = typeof(Product).GetProperty("Price")!;
-            var mockProductPriceProperty = new Mock<IProperty>();
-            mockProductPriceProperty.Setup(p => p.PropertyInfo).Returns(mockProductPricePropertyInfo);
+            var mockTestEntityPricePropertyInfo = typeof(TestEntity).GetProperty("Price")!;
+            var mockTestEntityPriceProperty = new Mock<IProperty>();
+            mockTestEntityPriceProperty.Setup(p => p.PropertyInfo).Returns(mockTestEntityPricePropertyInfo);
 
-            var mockProductEntityType = new Mock<IEntity>();
-            mockProductEntityType.Setup(e => e.PrimaryKey).Returns(mockProductPkProperty.Object);
-            mockProductEntityType.Setup(e => e.Properties)
+            var mockTestEntityEntityType = new Mock<IEntity>();
+            mockTestEntityEntityType.Setup(e => e.PrimaryKey).Returns(mockTestEntityPkProperty.Object);
+            mockTestEntityEntityType.Setup(e => e.Properties)
                 .Returns(new Dictionary<string, IProperty>
                 {
-                { "ProductId", mockProductPkProperty.Object },
-                { "Name", mockProductNameProperty.Object },
-                { "Price", mockProductPriceProperty.Object }
+                { "TestEntityId", mockTestEntityPkProperty.Object },
+                { "Name", mockTestEntityNameProperty.Object },
+                { "Price", mockTestEntityPriceProperty.Object }
                 });
 
             _mockMetadata.Setup(m => m.Entities)
                 .Returns(new Dictionary<Type, IEntity>
                 {
-                { typeof(Product), mockProductEntityType.Object }
+                { typeof(TestEntity), mockTestEntityEntityType.Object }
                 });
 
             _genericLambdaExpressions = new GenericLambdaExpressions(_mockMetadata.Object);
@@ -54,80 +60,36 @@ namespace business.validata.test.Utils
         [Fact]
         public void GetEntityByPrimaryKey_ReturnsCorrectExpression()
         {
-            var product = new Product { ProductId = 10, Name = "Laptop", Price = 1200.0f };
+            var TestEntity = new TestEntity { TestEntityId = 10, Name = "Laptop", Price = 1200.0f };
 
-            var expression = _genericLambdaExpressions.GetEntityByPrimaryKey(product);
+            var expression = _genericLambdaExpressions.GetEntityByPrimaryKey(TestEntity);
 
             Assert.NotNull(expression);
-            Assert.Equal("e => ((e.ProductId == 10) And (e.DeletedOn == null))", expression.ToString());
+            Assert.Equal("e => ((e.TestEntityId == 10) And (e.DeletedOn == null))", expression.ToString());
 
             var compiled = expression.Compile();
-            Assert.True(compiled(new Product { ProductId = 10, DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 11, DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 10, DeletedOn = DateTime.UtcNow }));
+            Assert.True(compiled(new TestEntity { TestEntityId = 10, DeletedOn = null }));
+            Assert.False(compiled(new TestEntity { TestEntityId = 11, DeletedOn = null }));
+            Assert.False(compiled(new TestEntity { TestEntityId = 10, DeletedOn = DateTime.UtcNow }));
         }
 
         [Fact]
         public void GetEntityById_ReturnsCorrectExpression()
         {
-            int productId = 5;
+            int TestEntityId = 5;
 
-            var expression = _genericLambdaExpressions.GetEntityById<Product>(productId);
-
-            Assert.NotNull(expression);
-            Assert.Equal("e => ((e.ProductId == 5) And (e.DeletedOn == null))", expression.ToString());
-
-            var compiled = expression.Compile();
-            Assert.True(compiled(new Product { ProductId = 5, DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 6, DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 5, DeletedOn = DateTime.UtcNow }));
-        }
-
-        [Fact]
-        public void GetEntityByUniqueValue_ReturnsCorrectExpression_ForStringField()
-        {
-            var product = new Product { ProductId = 1, Name = "UniqueProduct", Price = 50.0f };
-            var fieldName = "Name";
-            var value = "UniqueProduct";
-            var ids = new List<int> { 1 };
-
-            var expression = _genericLambdaExpressions.GetEntityByUniqueValue(product, fieldName, value, ids);
+            var expression = _genericLambdaExpressions.GetEntityById<TestEntity>(TestEntityId);
 
             Assert.NotNull(expression);
-
-            
-            Assert.Equal("e => (((e.Name == \"UniqueProduct\") And (e.DeletedOn == null)) AndAlso Invoke(e => Not(value(System.Collections.Generic.List`1[System.Int32]).Contains(e.ProductId)), e))", expression.ToString());
+            Assert.Equal("e => ((e.TestEntityId == 5) And (e.DeletedOn == null))", expression.ToString());
 
             var compiled = expression.Compile();
-
-            Assert.False(compiled(new Product { ProductId = 1, Name = "UniqueProduct", DeletedOn = null }));
-            Assert.True(compiled(new Product { ProductId = 2, Name = "UniqueProduct", DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 1, Name = "Another Name", DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 3, Name = "Another Name", DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 2, Name = "UniqueProduct", DeletedOn = DateTime.UtcNow }));
+            Assert.True(compiled(new TestEntity { TestEntityId = 5, DeletedOn = null }));
+            Assert.False(compiled(new TestEntity { TestEntityId = 6, DeletedOn = null }));
+            Assert.False(compiled(new TestEntity { TestEntityId = 5, DeletedOn = DateTime.UtcNow }));
         }
 
-        [Fact]
-        public void GetEntityByUniqueValue_ReturnsCorrectExpression_ForFloatField()
-        {
-            var product = new Product { ProductId = 1, Name = "Test", Price = 30.5f };
-            var fieldName = "Price";
-            var value = "30.5";
-            var ids = new List<int> { 1 };
-
-            var expression = _genericLambdaExpressions.GetEntityByUniqueValue(product, fieldName, value, ids);
-
-            Assert.NotNull(expression);
-            Assert.Contains("e.Price == 30.5", expression.ToString());
-            Assert.Contains("Not(value(System.Collections.Generic.List`1[System.Int32]).Contains(e.ProductId))", expression.ToString());
-
-            var compiled = expression.Compile();
-
-            Assert.False(compiled(new Product { ProductId = 1, Price = 30.5f, DeletedOn = null }));
-            Assert.True(compiled(new Product { ProductId = 2, Price = 30.5f, DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 3, Price = 25.0f, DeletedOn = null }));
-            Assert.False(compiled(new Product { ProductId = 2, Price = 30.5f, DeletedOn = DateTime.UtcNow }));
-        }
+        
 
         [Fact]
         public void GetDefaultValue_ReturnsCorrectDefaultForValueTypes()
@@ -143,7 +105,7 @@ namespace business.validata.test.Utils
         {
             Assert.Null(GenericLambdaExpressions.GetDefaultValue(typeof(string)));
             Assert.Null(GenericLambdaExpressions.GetDefaultValue(typeof(object)));
-            Assert.Null(GenericLambdaExpressions.GetDefaultValue(typeof(Product)));
+            Assert.Null(GenericLambdaExpressions.GetDefaultValue(typeof(TestEntity)));
         }
     }
 }

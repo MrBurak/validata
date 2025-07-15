@@ -1,6 +1,6 @@
-﻿using data.validata.com.Entities;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using model.validata.com.Entities;
 using util.validata.com;
 
 namespace data.validata.com.Configuration

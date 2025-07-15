@@ -1,5 +1,6 @@
 ﻿using data.validata.com.Context;
 using Microsoft.EntityFrameworkCore;
+using model.validata.com;
 
 
 namespace data.validata.test.Context
@@ -36,7 +37,7 @@ namespace data.validata.test.Context
                 .Distinct()
                 .ToList();
 
-            Assert.All(schemaNames, s => Assert.Equal(DbConsts.DefaultSchema, s));
+            Assert.All(schemaNames, s => Assert.Equal(Constants.DefaultSchema, s));
         }
     }
 }

@@ -1,9 +1,10 @@
 ﻿using business.validata.com.Interfaces.Utils;
 using business.validata.com.Validators;
-using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
+using model.validata.com.ValueObjects.Customer;
 using Moq;
 using System.Linq.Expressions;
 
@@ -36,8 +37,42 @@ namespace business.validata.test.Validators
             _mockLambdaExpressions.Setup(l => l.GetEntityById<Customer>(It.IsAny<int>()))
                 .Returns(x => true);
 
-            _mockStringFieldValidation.Setup(s => s.InvokeAsnc(It.IsAny<StringField<Customer>>()))
-                .ReturnsAsync((string?)null); 
+            _mockStringFieldValidation.Setup(s => s.Invoke(It.IsAny<StringField<Customer>>()))
+                .Returns((string?)null); 
+        }
+
+        [Fact]
+        public void Constructor_ThrowsArgumentNullException_WhenRepositoryIsNull()
+        {
+            var ex = Assert.Throws<ArgumentNullException>(() =>
+                new GenericValidation<Customer>(null!, _mockLambdaExpressions.Object, _mockStringFieldValidation.Object));
+            Assert.Contains("repository", ex.ParamName);
+        }
+
+        [Fact]
+        public void Constructor_ThrowsArgumentNullException_WhenLambdaExpressionsIsNull()
+        {
+            var ex = Assert.Throws<ArgumentNullException>(() =>
+                new GenericValidation<Customer>(_mockRepository.Object, null!, _mockStringFieldValidation.Object));
+            Assert.Contains("lambdaExpressions", ex.ParamName);
+        }
+
+        [Fact]
+        public void Constructor_ThrowsArgumentNullException_WhenStringFieldValidationIsNull()
+        {
+            var ex = Assert.Throws<ArgumentNullException>(() =>
+                new GenericValidation<Customer>(_mockRepository.Object, _mockLambdaExpressions.Object, null!));
+            Assert.Contains("stringFieldValidation", ex.ParamName);
+        }
+
+        [Fact]
+        public void Constructor_Succeeds_WhenAllDependenciesProvided()
+        {
+            var validation = new GenericValidation<Customer>(
+                _mockRepository.Object,
+                _mockLambdaExpressions.Object,
+                _mockStringFieldValidation.Object);
+            Assert.NotNull(validation);
         }
 
         [Fact]
@@ -76,7 +111,7 @@ namespace business.validata.test.Validators
         public async Task ExistsByEntity_ReturnsExistsResultWithEntity_WhenEntityFoundAndOperationIsRelevant(BusinessSetOperation operation)
         {
             
-            var customer = new Customer { CustomerId = 1, FirstName = "John" };
+            var customer = new Customer(1, new FirstName("John"), new LastName("Doe"), new EmailAddress("a@b.com"), new StreetAddress("a"), new PostalCode("a"));
             _mockLambdaExpressions.Setup(l => l.GetEntityByPrimaryKey(customer))
                 .Returns(c => c.CustomerId == customer.CustomerId);
             _mockRepository.Setup(r => r.GetEntityAsync(It.IsAny<Expression<Func<Customer, bool>>>()))
@@ -99,7 +134,7 @@ namespace business.validata.test.Validators
         public async Task ExistsByEntity_ReturnsExistsResultWithNullEntity_WhenEntityNotFoundAndOperationIsRelevant(BusinessSetOperation operation)
         {
             
-            var customer = new Customer { CustomerId = 1, FirstName = "John" };
+            var customer = new Customer(1, new FirstName("John"), new LastName("Doe"), new EmailAddress("a@b.com"), new StreetAddress("a"), new PostalCode("a"));
             _mockLambdaExpressions.Setup(l => l.GetEntityByPrimaryKey(customer))
                 .Returns(c => c.CustomerId == customer.CustomerId);
             _mockRepository.Setup(r => r.GetEntityAsync(It.IsAny<Expression<Func<Customer, bool>>>()))
@@ -120,9 +155,9 @@ namespace business.validata.test.Validators
         public async Task ExistsByEntity_ReturnsNull_WhenOperationIsNotRelevant(BusinessSetOperation operation)
         {
             
-            var customer = new Customer { CustomerId = 1, FirstName = "John" };
+            var customer = new Customer(42, new FirstName("John"), new LastName("Doe"), new EmailAddress("a@b.com"), new StreetAddress("a"), new PostalCode("a"));
 
-            
+
             var result = await _genericValidation.Exists(customer, operation);
 
             
@@ -140,7 +175,7 @@ namespace business.validata.test.Validators
         {
             
             int customerId = 123;
-            var customer = new Customer { CustomerId = customerId, FirstName = "Jane" };
+            var customer = new Customer(customerId, new FirstName("John"), new LastName("Doe"), new EmailAddress("a@b.com"), new StreetAddress("a"), new PostalCode("a"));
             _mockLambdaExpressions.Setup(l => l.GetEntityById<Customer>(customerId))
                 .Returns(c => c.CustomerId == customerId);
             _mockRepository.Setup(r => r.GetEntityAsync(It.IsAny<Expression<Func<Customer, bool>>>()))

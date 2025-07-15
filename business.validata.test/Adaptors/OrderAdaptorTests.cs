@@ -1,189 +1,172 @@
 ﻿using business.validata.com.Adaptors;
-using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using FluentAssertions;
+using model.validata.com;
+using model.validata.com.DTO;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
 using model.validata.com.Order;
+using model.validata.com.ValueObjects.Product;
 using Moq;
-using test.utils;
 
 
 namespace business.validata.test.Adaptors
 {
 
+
+
     public class OrderAdaptorTests
     {
-        private readonly Mock<IProductRepository> _mockProductRepository;
-        private readonly OrderAdaptor _orderAdaptor;
+        private readonly Mock<IProductRepository> productRepoMock = new();
+        private readonly Mock<IOrderItemRepository> orderItemRepoMock = new();
 
+        private readonly OrderAdaptor adaptor;
 
         public OrderAdaptorTests()
         {
-            _mockProductRepository = new Mock<IProductRepository>();
-            _orderAdaptor = new OrderAdaptor(_mockProductRepository.Object);
-
+            adaptor = new OrderAdaptor(productRepoMock.Object, orderItemRepoMock.Object);
         }
 
         [Fact]
         public void Constructor_ThrowsArgumentNullException_WhenProductRepositoryIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new OrderAdaptor(null!));
+            var ex = Assert.Throws<ArgumentNullException>(() => new OrderAdaptor(null!, orderItemRepoMock.Object));
+            Assert.Contains("productRepository", ex.ParamName);
         }
 
         [Fact]
-        public async Task Invoke_CreatesNewOrder_WhenBusinessSetOperationIsCreate()
+        public void Constructor_ThrowsArgumentNullException_WhenOrderItemRepositoryIsNull()
         {
-            var products = new List<Product>
-                {
-                    new Product { ProductId = 1, Name = "Laptop", Price = 1000.0f },
-                    new Product { ProductId = 2, Name = "Mouse", Price = 25.0f }
-                };
-            _mockProductRepository.Setup(repo => repo.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(products);
+            var ex = Assert.Throws<ArgumentNullException>(() => new OrderAdaptor(productRepoMock.Object, null!));
+            Assert.Contains("orderItemRepository", ex.ParamName);
+        }
 
+        [Fact]
+        public void Constructor_Succeeds_WhenDependenciesAreProvided()
+        {
+            var adaptor = new OrderAdaptor(productRepoMock.Object, orderItemRepoMock.Object);
+            Assert.NotNull(adaptor);
+        }
+
+        [Fact]
+        public async Task Invoke_WithValidModelAndProducts_ShouldReturnOrder()
+        {
+            
             var model = new OrderUpdateModel
             {
-                CustomerId = 101,
+                OrderId = 1,
+                CustomerId = 123,
                 Items = new List<OrderItemInsertModel>
             {
                 new OrderItemInsertModel { ProductId = 1, Quantity = 2 },
-                new OrderItemInsertModel { ProductId = 2, Quantity = 1 }
+                new OrderItemInsertModel { ProductId = 2, Quantity = 3 }
             }
             };
 
-            
-            var order = await _orderAdaptor.Invoke(model, BusinessSetOperation.Create);
-
-            
-            Assert.NotNull(order);
-            Assert.Equal(0, order.OrderId); 
-            Assert.Equal(model.CustomerId, order.CustomerId);
-            Assert.Equal(3, order.ProductCount); 
-            Assert.Equal(2, order.OrderItems.Count);
-
-            var orderItem1 = order.OrderItems.FirstOrDefault(oi => oi.ProductId == 1);
-            Assert.NotNull(orderItem1);
-            Assert.Equal(1, orderItem1.ProductId);
-            Assert.Equal(2, orderItem1.Quantity);
-            Assert.Equal(1000.0f, orderItem1.ProductPrice);
-
-            var orderItem2 = order.OrderItems.FirstOrDefault(oi => oi.ProductId == 2);
-            Assert.NotNull(orderItem2);
-            Assert.Equal(2, orderItem2.ProductId);
-            Assert.Equal(1, orderItem2.Quantity);
-            Assert.Equal(25.0f, orderItem2.ProductPrice);
-
-            Assert.Equal((2 * 1000.0f) + (1 * 25.0f), order.TotalAmount); 
-            _mockProductRepository.Verify(repo => repo.GetAllAsync(PaginationUtil.paginationRequest), Times.Once);
-        }
-
-        [Fact]
-        public async Task Invoke_UpdatesExistingOrder_WhenBusinessSetOperationIsUpdate()
-        {
-            
             var products = new List<Product>
-        {
-            new Product { ProductId = 1, Name = "Laptop", Price = 1000.0f },
-            new Product { ProductId = 3, Name = "Keyboard", Price = 75.0f }
-        };
-            _mockProductRepository.Setup(repo => repo.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(products);
-
-            var model = new OrderUpdateModel
             {
-                OrderId = 123, 
-                CustomerId = 101,
-                Items = new List<OrderItemInsertModel>
-            {
-                new OrderItemInsertModel { ProductId = 1, Quantity = 1 },
-                new OrderItemInsertModel { ProductId = 3, Quantity = 3 }
-            }
+                new Product (1, new ProductName("a"), new ProductPrice(10)),
+                new Product (2, new ProductName("b"), new ProductPrice(5))
             };
 
-            
-            var order = await _orderAdaptor.Invoke(model, BusinessSetOperation.Update);
+            productRepoMock.Setup(p => p.GetAllAsync(It.IsAny<PaginationRequest>()))
+                .ReturnsAsync(products);
 
             
-            Assert.NotNull(order);
-            Assert.Equal(model.OrderId, order.OrderId); 
-            Assert.Equal(model.CustomerId, order.CustomerId);
-            Assert.Equal(4, order.ProductCount); 
-            Assert.Equal(2, order.OrderItems.Count);
+            var result = await adaptor.Invoke(model, BusinessSetOperation.Create);
 
-            var orderItem1 = order.OrderItems.FirstOrDefault(oi => oi.ProductId == 1);
-            Assert.NotNull(orderItem1);
-            Assert.Equal(1, orderItem1.ProductId);
-            Assert.Equal(1, orderItem1.Quantity);
-            Assert.Equal(1000.0f, orderItem1.ProductPrice);
-
-            var orderItem2 = order.OrderItems.FirstOrDefault(oi => oi.ProductId == 3);
-            Assert.NotNull(orderItem2);
-            Assert.Equal(3, orderItem2.ProductId);
-            Assert.Equal(3, orderItem2.Quantity);
-            Assert.Equal(75.0f, orderItem2.ProductPrice);
-
-            Assert.Equal((1 * 1000.0f) + (3 * 75.0f), order.TotalAmount); 
-            _mockProductRepository.Verify(repo => repo.GetAllAsync(PaginationUtil.paginationRequest), Times.Once);
+            
+            result.Should().NotBeNull();
+            result.TotalAmount.Value.Should().Be(2 * 10 + 3 * 5);
+            result.ProductQuantity.Value.Should().Be(5);
+            result.OrderItems.Count.Should().Be(2);
         }
 
         [Fact]
-        public async Task Invoke_HandlesProductNotFound_SettingPriceToZero()
+        public async Task Invoke_WithNullModel_ShouldThrowArgumentNullException()
         {
             
+            Func<Task> act = () => adaptor.Invoke(null!, BusinessSetOperation.Create);
+
+            
+            await act.Should().ThrowAsync<ArgumentNullException>();
+        }
+
+        [Fact]
+        public async Task Invoke_WhenProductNotFound_ShouldThrowInvalidOperationException()
+        {
+            
+            var model = new OrderUpdateModel
+            {
+                OrderId = 1,
+                CustomerId = 123,
+                Items = new List<OrderItemInsertModel> { new OrderItemInsertModel { ProductId = 99, Quantity = 1 } }
+            };
+
+            productRepoMock.Setup(p => p.GetAllAsync(It.IsAny<PaginationRequest>()))
+                .ReturnsAsync(new List<Product>());
+
+            
+            Func<Task> act = () => adaptor.Invoke(model, BusinessSetOperation.Create);
+
+            
+            await act.Should().ThrowAsync<InvalidOperationException>()
+                .WithMessage("*Product with ID 99*");
+        }
+
+        [Fact]
+        public void Invoke_WithOrderDtos_ShouldMapToViewModels()
+        {
+            
+            var dtos = new List<OrderDto>
+            {
+                new OrderDto { OrderId = 1, TotalAmount = 100, OrderDate = DateTime.Today, ProductQuantity = 2 },
+                new OrderDto { OrderId = 2, TotalAmount = 50, OrderDate = DateTime.Today, ProductQuantity = 1 }
+            };
+
+            
+            var result = adaptor.Invoke(dtos);
+
+            
+            result.Should().HaveCount(2);
+            result.First().OrderId.Should().Be(1);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_WithValidOrder_ShouldReturnDetailViewModel()
+        {
+            
+            var order = new OrderDto
+            {
+                OrderId = 10,
+                TotalAmount = 150,
+                OrderDate = DateTime.Today,
+                ProductQuantity = 3
+            };
+
+            var orderItems = new List<OrderItemDto>
+            {
+                new OrderItemDto{ OrderId=10, OrderItemId=1, ProductId=1, ProductPrice=10, Quantity=1 },
+                new OrderItemDto{ OrderId=10, OrderItemId=2, ProductId=2, ProductPrice=20, Quantity=2 },
+            };
+
             var products = new List<Product>
-        {
-            new Product { ProductId = 1, Name = "Laptop", Price = 1000.0f }
-        };
-            _mockProductRepository.Setup(repo => repo.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(products);
-
-            var model = new OrderUpdateModel
             {
-                CustomerId = 102,
-                Items = new List<OrderItemInsertModel>
-            {
-                new OrderItemInsertModel { ProductId = 1, Quantity = 1 },
-                new OrderItemInsertModel { ProductId = 99, Quantity = 5 } 
-            }
+                new Product (1, new ProductName("Product A"), new ProductPrice(10)),
+                new Product (2, new ProductName("Product B"), new ProductPrice(10))
             };
 
-            
-            var order = await _orderAdaptor.Invoke(model, BusinessSetOperation.Create);
+            orderItemRepoMock.Setup(r => r.GetAllAsync(order.OrderId)).Returns(Task.FromResult(orderItems.AsEnumerable()));
+            productRepoMock.Setup(p => p.GetAllWithDeletedAsync()).ReturnsAsync(products);
 
             
-            Assert.NotNull(order);
-            Assert.Equal(2, order.OrderItems.Count);
+            var result = await adaptor.InvokeAsync(order);
 
-            var existingProductItem = order.OrderItems.FirstOrDefault(oi => oi.ProductId == 1);
-            Assert.NotNull(existingProductItem);
-            Assert.Equal(1000.0f, existingProductItem.ProductPrice);
-
-            var nonExistingProductItem = order.OrderItems.FirstOrDefault(oi => oi.ProductId == 99);
-            Assert.NotNull(nonExistingProductItem);
-            Assert.Equal(0.0f, nonExistingProductItem.ProductPrice); 
-            Assert.Equal((1 * 1000.0f) + (5 * 0.0f), order.TotalAmount); 
+            
+            result.OrderId.Should().Be(10);
+            result.Items.Should().HaveCount(2);
+            result.Items.First().ProductName.Should().Be("Product A");
         }
-
-        [Fact]
-        public async Task Invoke_HandlesEmptyProductListFromRepository()
-        {
-            
-            _mockProductRepository.Setup(repo => repo.GetAllAsync(PaginationUtil.paginationRequest)).ReturnsAsync(new List<Product>()); 
-
-            var model = new OrderUpdateModel
-            {
-                CustomerId = 103,
-                Items = new List<OrderItemInsertModel>
-            {
-                new OrderItemInsertModel { ProductId = 1, Quantity = 2 }
-            }
-            };
-
-            
-            var order = await _orderAdaptor.Invoke(model, BusinessSetOperation.Create);
-
-            
-            Assert.NotNull(order);
-            Assert.Single(order.OrderItems);
-            Assert.Equal(0.0f, order.OrderItems.First().ProductPrice);
-            Assert.Equal(0.0f, order.TotalAmount);
-        }
-
     }
+
 }

@@ -1,21 +1,12 @@
-﻿using Newtonsoft.Json;
-using System.Linq.Expressions;
-using System.Reflection;
+﻿using System.Linq.Expressions;
+
 
 namespace util.validata.com
 {
     public class ObjectUtil
     {
       
-        public static string GetValue<T>(T obj, string fieldName)
-        {
-            if (obj == null) return "";
-            PropertyInfo? property = obj.GetType().GetProperty(fieldName);
-            if (property == null) return "";
-            var val = property.GetValue(obj);
-            if (val == null) return string.Empty;
-            return (string)val;
-        }
+        
 
         public static Expression<Func<T, bool>> ConcatLambdaExpression<T>(Expression<Func<T, bool>> firstExpression, Expression<Func<T, bool>> secondExpression)
         {
@@ -32,10 +23,6 @@ namespace util.validata.com
             return Expression.Lambda<Func<T, bool>>(Expression.Not(call), eParam);
         }
 
-        public static T ConvertObj<T,D>(D obj)
-        {
-            var json = JsonConvert.SerializeObject(obj);
-            return JsonConvert.DeserializeObject<T>(json)!;
-        }
+        
     }
 }

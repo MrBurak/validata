@@ -1,5 +1,5 @@
 ﻿using business.validata.com.Validators.Models;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
 
 

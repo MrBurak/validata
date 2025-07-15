@@ -1,6 +1,6 @@
 ﻿using business.validata.com.Interfaces.Utils;
-using data.validata.com.Interfaces.Repository;
 using model.validata.com.Validators;
+using model.validata.com.ValueObjects.Util;
 using util.validata.com;
 
 namespace business.validata.com.Utils
@@ -9,39 +9,18 @@ namespace business.validata.com.Utils
     {
         
 
-        private readonly ICommandRepository<TEntity> repository;
         
-        private readonly IGenericLambdaExpressions genericLambdaExpressions;
-        
-       
-
-        public StringFieldValidation(
-            ICommandRepository<TEntity> repository, 
-            IGenericLambdaExpressions genericLambdaExpressions)
+        public string? Invoke(StringField<TEntity> stringField)
         {
-            ArgumentNullException.ThrowIfNull(repository);
-            ArgumentNullException.ThrowIfNull(genericLambdaExpressions);
-            this.repository = repository;
-            this.genericLambdaExpressions = genericLambdaExpressions;
-        }
 
-        
-        public async Task<string?> InvokeAsnc(StringField<TEntity> stringField)
-        {
-            string value = ObjectUtil.GetValue(stringField.Entity, stringField.Field!);
+            string value = ValueObjectUtil.GetValue(stringField.Entity, stringField.Field!)!;
 
             if (StringUtil.IsEmpty(value)) return stringField.EmptyMesssage;
             if (stringField.CheckRegex) 
             {
                 if (!StringUtil.IsAlphaNumeric(value, stringField.Regex)) return stringField.RegexMesssage;
             }
-            if (stringField.CheckUnique) 
-            {
-                
-                var expression = genericLambdaExpressions.GetEntityByUniqueValue(stringField.Entity, stringField.Field!, value, stringField.Ids);
-                var exists = await repository.GetEntityAsync(expression!);
-                if (exists!=null) { return stringField.UnixMesssage; }
-            }
+            
             return null;
         }
 

@@ -1,7 +1,7 @@
 ﻿using business.validata.com.Interfaces;
 using business.validata.com.Interfaces.Utils;
 using business.validata.com.Interfaces.Validators;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using Microsoft.Extensions.Logging;
 using model.validata.com;
@@ -9,6 +9,7 @@ using model.validata.com.Enumeration;
 using model.validata.com.Order;
 using System.Linq.Expressions;
 using util.validata.com;
+using business.validata.com.Interfaces.Adaptors;
 
 namespace business.validata.com
 {
@@ -63,16 +64,14 @@ namespace business.validata.com
             try
             {
                 List<Action<Order>> properties = new()
-            {
-                x =>
                 {
-                    x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
-                    x.OperationSourceId = (int)BusinessOperationSource.Api;
-                    x.OrderDate = DateTimeUtil.SystemTime;
-                    x.ProductCount = order.ProductCount;
-                    x.TotalAmount = order.TotalAmount;
-                }
-            };
+                    x =>
+                    {
+                            x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
+                            x.UpdateProductCount(order.ProductQuantity); 
+                            x.UpdateTotalAmount(order.TotalAmount);   
+                        }
+                    };
 
                 foreach (var item in order.OrderItems)
                 {
@@ -80,41 +79,45 @@ namespace business.validata.com
                     item.OperationSourceId = (int)BusinessOperationSource.Api;
                 }
 
-                Order? result;
-
                 if (businessSetOperation == BusinessSetOperation.Create)
                 {
                     logger.LogInformation("Creating new Order.");
-                    result = await unitOfWork.orders.AddAsync(order);
+                    order = await unitOfWork.orders.AddAsync(order);
                     await unitOfWork.CommitAsync();
-                    logger.LogInformation("Order created with ID: {OrderId}", result?.OrderId);
+                    logger.LogInformation("Order created with ID: {OrderId}", order!.OrderId);
                 }
                 else
                 {
                     logger.LogInformation("Updating Order with ID: {OrderId}", order.OrderId);
                     var query = genericLambdaExpressions.GetEntityByPrimaryKey(order);
+                    
                     await unitOfWork.orders.UpdateAsync(query, properties);
+                    
                     await DeleteOrderItemsAsync(x => x.DeletedOn == null && x.OrderId == order.OrderId);
+                    foreach (var item in order.OrderItems)
+                    {
+                        await unitOfWork.orderItems.AddAsync(item);
+                    }
                     await unitOfWork.CommitAsync();
-                    result = await unitOfWork.orders.GetEntityAsync(query);
-                    logger.LogInformation("Order updated with ID: {OrderId}", order.OrderId);
+                    order = await unitOfWork.orders.GetEntityAsync(query);
+                    logger.LogInformation("Order updated with ID: {OrderId}", order!.OrderId);
                 }
-
-                order.OrderId = result!.OrderId;
 
                 var orderDetailViewModel = new OrderDetailViewModel
                 {
                     OrderId = order.OrderId,
                     OrderDate = order.OrderDate,
-                    ProductCount = order.ProductCount,
-                    TotalAmount = order.TotalAmount,
-                    Items = order.OrderItems.Select(x => new OrderItemViewModel
+                    ProductCount = order.ProductQuantityValue,
+                    TotalAmount = order.TotalAmountValue,
+                    Items = order.OrderItems.Where(x=> x.QuantityValue>0).Select(x => new OrderItemViewModel
                     {
-                        Quantity = x.Quantity,
-                        ProductPrice = x.ProductPrice,
+                        Quantity = x.QuantityValue,
+                        ProductPrice = x.ProductPriceValue,
                         ProductName = validate.Products.FirstOrDefault()?.Name ?? "",
                     })
                 };
+                orderDetailViewModel.ProductCount = orderDetailViewModel.Items.Sum(x => x.Quantity);
+                orderDetailViewModel.TotalAmount = orderDetailViewModel.Items.Sum(x => x.Quantity * x.ProductPrice);
 
                 commandResult.Data = orderDetailViewModel;
                 commandResult.Success = true;
@@ -142,21 +145,14 @@ namespace business.validata.com
                 return apiResult;
             }
 
-            List<Action<Order>> properties = new()
-        {
-            x =>
-            {
-                x.DeletedOn = DateTimeUtil.SystemTime;
-                x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
-                x.OperationSourceId = (int)BusinessOperationSource.Api;
-            }
-        };
+            
 
             try
             {
                 logger.LogInformation("Soft deleting Order with ID: {OrderId}", id);
-                await unitOfWork.orders.UpdateAsync(genericLambdaExpressions.GetEntityById<Order>(id), properties);
                 await DeleteOrderItemsAsync(x => x.DeletedOn == null && x.OrderId == id);
+                await unitOfWork.orders.DeleteAsync(genericLambdaExpressions.GetEntityById<Order>(id));
+                
                 await unitOfWork.CommitAsync();
                 apiResult.Success = true;
                 logger.LogInformation("Order with ID: {OrderId} deleted successfully.", id);
@@ -176,6 +172,11 @@ namespace business.validata.com
             logger.LogInformation("Starting DeleteAllAsync for CustomerId: {CustomerId}", customerId);
 
             Expression<Func<Order, bool>> expressionOrder = x => x.CustomerId == customerId && x.DeletedOn == null;
+            var orderIds = (await unitOfWork.orders.GetListAsync(x=> x.CustomerId==customerId)).Select(x => x.OrderId).ToList();
+
+            Expression<Func<OrderItem, bool>> expressionOrderItem = x => orderIds.Contains(x.OrderId) && x.DeletedOn == null;
+
+            await DeleteOrderItemsAsync(expressionOrderItem);
 
             var orders = await DeleteOrdersAsync(expressionOrder);
             if (!orders.Success || orders.Data == null)
@@ -184,10 +185,8 @@ namespace business.validata.com
                 return;
             }
 
-            var orderIds = orders.Data.Select(x => x.OrderId).ToList();
-            Expression<Func<OrderItem, bool>> expressionOrderItem = x => orderIds.Contains(x.OrderId) && x.DeletedOn == null;
-
-            await DeleteOrderItemsAsync(expressionOrderItem);
+            
+          
             await unitOfWork.CommitAsync();
 
             logger.LogInformation("Deleted all orders and order items for CustomerId: {CustomerId}", customerId);
@@ -196,19 +195,11 @@ namespace business.validata.com
         private async Task<CommandResult<List<Order>>> DeleteOrdersAsync(Expression<Func<Order, bool>> expression)
         {
             CommandResult<List<Order>> commandResult = new();
-            List<Action<Order>> properties = new()
-        {
-            x =>
-            {
-                x.DeletedOn = DateTimeUtil.SystemTime;
-                x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
-                x.OperationSourceId = (int)BusinessOperationSource.Api;
-            }
-        };
+            
             try
             {
                 logger.LogInformation("Deleting orders matching expression.");
-                await unitOfWork.orders.UpdateAsync(expression, properties);
+                await unitOfWork.orders.DeleteAsync(expression);
                 commandResult.Success = true;
                 logger.LogInformation("Orders deleted successfully.");
             }
@@ -224,19 +215,11 @@ namespace business.validata.com
         private async Task<CommandResult<List<OrderItem>>> DeleteOrderItemsAsync(Expression<Func<OrderItem, bool>> expression)
         {
             CommandResult<List<OrderItem>> commandResult = new();
-            List<Action<OrderItem>> properties = new()
-        {
-            x =>
-            {
-                x.DeletedOn = DateTimeUtil.SystemTime;
-                x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
-                x.OperationSourceId = (int)BusinessOperationSource.Api;
-            }
-        };
+            
             try
             {
                 logger.LogInformation("Deleting order items matching expression.");
-                await unitOfWork.orderItems.UpdateAsync(expression, properties);
+                await unitOfWork.orderItems.DeleteAsync(expression);
                 commandResult.Success = true;
                 logger.LogInformation("Order items deleted successfully.");
             }
@@ -248,6 +231,12 @@ namespace business.validata.com
             }
             return commandResult;
         }
+
+#if DEBUG
+        public async Task<CommandResult<List<Order>>> InvokeDeleteOrdersForTest(Expression<Func<Order, bool>> expr) => await DeleteOrdersAsync(expr);
+        public async Task<CommandResult<List<OrderItem>>> InvokeDeleteOrderItemsForTest(Expression<Func<OrderItem, bool>> expr) => await DeleteOrderItemsAsync(expr);
+#endif
+
 
 
     }

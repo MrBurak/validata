@@ -1,5 +1,5 @@
 ﻿using data.validata.com.Context;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using System.Linq.Expressions;
 
 namespace data.validata.test.Context

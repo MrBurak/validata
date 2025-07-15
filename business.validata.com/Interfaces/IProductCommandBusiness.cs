@@ -1,4 +1,4 @@
-﻿using data.validata.com.Entities;
+﻿using model.validata.com.Entities;
 using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Product;

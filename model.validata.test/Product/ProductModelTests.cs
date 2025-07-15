@@ -20,7 +20,7 @@ namespace model.validata.test.Product
             {
                 ProductId = 1,
                 Name = "Smartphone",
-                Price = 999.99f
+                Price = 999.99m
             };
 
             var errors = ValidateModel(model);
@@ -54,7 +54,7 @@ namespace model.validata.test.Product
             {
                 ProductId = 1,
                 Name = null, 
-                Price = 100.0f
+                Price = 100.0m
             };
 
             var errors = ValidateModel(model);
@@ -70,7 +70,7 @@ namespace model.validata.test.Product
             {
                 ProductId = 1,
                 Name = "Laptop",
-                Price = -50.0f 
+                Price = -50.0m 
             };
 
             var errors = ValidateModel(model);
@@ -86,7 +86,7 @@ namespace model.validata.test.Product
             {
                 ProductId = 1,
                 Name = new string('A', 150), 
-                Price = -1.0f
+                Price = -1.0m
             };
 
             var errors = ValidateModel(model);

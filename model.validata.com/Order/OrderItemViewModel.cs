@@ -4,9 +4,9 @@
     {
         public int Quantity { get; set; }
 
-        public float ProductPrice { get; set; }
+        public decimal ProductPrice { get; set; }
 
-        public float TotalAmount { get { return Quantity * ProductPrice; } }
+        public decimal TotalAmount { get { return Quantity * ProductPrice; } }
 
         public string? ProductName { get; set; }
 

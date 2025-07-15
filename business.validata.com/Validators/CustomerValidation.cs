@@ -1,8 +1,9 @@
 ﻿using business.validata.com.Interfaces.Validators;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using model.validata.com.Enumeration;
 using model.validata.com.Validators;
+using System.Linq.Expressions;
 
 
 
@@ -25,10 +26,7 @@ namespace business.validata.com.Validators
         public async Task<ValidationResult<Customer>> InvokeAsync(Customer customer, BusinessSetOperation businessSetOperation)
         {
             
-            if (businessSetOperation == BusinessSetOperation.Create) 
-            {
-                customer.CustomerId = 0;
-            }
+           
             var result = new ValidationResult<Customer>();
             var exists = await genericValidation.Exists(customer, businessSetOperation);
             if (exists != null) 
@@ -42,16 +40,26 @@ namespace business.validata.com.Validators
             }
             
             
-            result.AddError(await genericValidation.ValidateStringField(customer, nameof(Customer.FirstName), true, false));
-            result.AddError(await genericValidation.ValidateStringField(customer, nameof(Customer.LastName), true, false));
+            result.AddError(genericValidation.ValidateStringField(customer, nameof(Customer.FirstName), true, null));
+            result.AddError(genericValidation.ValidateStringField(customer, nameof(Customer.LastName), true, null));
             if (businessSetOperation.Equals(BusinessSetOperation.Create)) 
             {
-                var ids = (await repository.GetListAsync(x => x.DeletedOn == null)).Select(x=> x.CustomerId).ToList();
+                
 
-                result.AddError(await genericValidation.ValidateStringField(customer, nameof(Customer.Email), true, true, ids ,@"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$"));
+                Expression<Func<Customer, bool>> expression= x=> x.Email.Value.Equals(customer.EmailValue);
+                result.AddError(genericValidation.ValidateStringField(customer, nameof(Customer.Email), true, @"^([\w\.\-]+)@([\w\-]+)((\.(\w){2,3})+)$"));
+                if (result.IsValid)
+                {
+                    var email = customer.Email.Value;
+                    var items = await repository.GetListAsync(x => x.DeletedOn == null && x.CustomerId != customer.CustomerId);
+                    if (items.Any(x => x.Email.Value == email))
+                    {
+                        result.AddError("Customer email have to be unique");
+                    }
+                }
             }
             
-            result.AddError(await genericValidation.ValidateStringField(customer, nameof(Customer.Pobox), true, false));
+            result.AddError(genericValidation.ValidateStringField(customer, nameof(Customer.Pobox), true, null));
             return result;
         }        
     }

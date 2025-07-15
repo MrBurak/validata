@@ -1,11 +1,12 @@
 ﻿using business.validata.com.Interfaces;
+using business.validata.com.Interfaces.Adaptors;
 using business.validata.com.Interfaces.Utils;
 using business.validata.com.Interfaces.Validators;
-using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
 using Microsoft.Extensions.Logging;
 using model.validata.com;
-using model.validata.com.Customer;
+using model.validata.com.DTO;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
 using util.validata.com;
 
@@ -20,6 +21,7 @@ namespace business.validata.com
         private readonly IGenericLambdaExpressions genericLambdaExpressions;
         private readonly IGenericValidation<Customer> genericValidation;
         private readonly ILogger<CustomerCommandBusiness> logger;
+        private readonly ICustomerAdaptor customerAdaptor;
 
         public CustomerCommandBusiness(
             ICustomerValidation validation,
@@ -28,27 +30,32 @@ namespace business.validata.com
             IGenericLambdaExpressions genericLambdaExpressions,
             IOrderCommandBusiness orderCommandBusiness,
             IUnitOfWork unitOfWork,
-            ILogger<CustomerCommandBusiness> logger) 
+            ILogger<CustomerCommandBusiness> logger, 
+            ICustomerAdaptor customerAdaptor) 
         {
             ArgumentNullException.ThrowIfNull(validation);
+            ArgumentNullException.ThrowIfNull(repository);
             ArgumentNullException.ThrowIfNull(unitOfWork);
             ArgumentNullException.ThrowIfNull(genericLambdaExpressions);
             ArgumentNullException.ThrowIfNull(orderCommandBusiness);
             ArgumentNullException.ThrowIfNull(genericValidation);
             ArgumentNullException.ThrowIfNull(logger);
+            ArgumentNullException.ThrowIfNull(customerAdaptor);
+
             this.validation = validation;
             this.unitOfWork = unitOfWork;
             this.orderCommandBusiness = orderCommandBusiness;
             this.genericLambdaExpressions = genericLambdaExpressions;
             this.genericValidation = genericValidation;
             this.logger = logger;
+            this.customerAdaptor = customerAdaptor; 
         }
 
-        public async Task<CommandResult<CustomerViewModel>> InvokeAsync(Customer customer, BusinessSetOperation businessSetOperation)
+        public async Task<CommandResult<CustomerDto>> InvokeAsync(Customer customer, BusinessSetOperation businessSetOperation)
         {
             logger.LogInformation("Starting InvokeAsync for Customer with operation: {Operation}", businessSetOperation);
 
-            CommandResult<CustomerViewModel> apiResult = new CommandResult<CustomerViewModel>();
+            CommandResult<CustomerDto> apiResult = new CommandResult<CustomerDto>();
 
             var validate = await validation.InvokeAsync(customer, businessSetOperation);
             if (!validate.IsValid)
@@ -61,17 +68,17 @@ namespace business.validata.com
             try
             {
                 List<Action<Customer>> properties = new()
-            {
-                x =>
                 {
-                    x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
-                    x.OperationSourceId = (int) BusinessOperationSource.Api;
-                    x.FirstName = customer.FirstName;
-                    x.LastName = customer.LastName;
-                    x.Pobox = customer.Pobox;
-                    x.Address = customer.Address;
-                }
-            };
+                    x =>
+                    {
+                        x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
+                        x.OperationSourceId = (int) BusinessOperationSource.Api;
+                        x.UpdateFirstName(customer.FirstName);
+                        x.UpdateLastName(customer.LastName);
+                        x.UpdatePobox(customer.Pobox);
+                        x.UpdateAddress(customer.Address);
+                    }
+                };
 
                 Customer? result;
 
@@ -92,7 +99,7 @@ namespace business.validata.com
                     logger.LogInformation("Customer updated with ID: {CustomerId}", customer.CustomerId);
                 }
 
-                apiResult.Data = ObjectUtil.ConvertObj<CustomerViewModel, Customer>(result!);
+                apiResult.Data = customerAdaptor.Invoke(result!);
                 apiResult.Success = true;
             }
             catch (Exception ex)
@@ -118,21 +125,10 @@ namespace business.validata.com
                 apiResult.Validations.Add(exist.Code);
                 return apiResult;
             }
-
-            List<Action<Customer>> properties = new()
-        {
-            x =>
-            {
-                x.DeletedOn = DateTimeUtil.SystemTime;
-                x.LastModifiedTimeStamp = DateTimeUtil.SystemTime;
-                x.OperationSourceId = (int) BusinessOperationSource.Api;
-            }
-        };
-
             try
             {
                 logger.LogInformation("Soft deleting Customer with ID: {CustomerId}", id);
-                await unitOfWork.customers.UpdateAsync(genericLambdaExpressions.GetEntityById<Customer>(id), properties);
+                await unitOfWork.customers.DeleteAsync(genericLambdaExpressions.GetEntityById<Customer>(id));
                 await orderCommandBusiness.DeleteAllAsync(id);
                 await unitOfWork.CommitAsync();
                 apiResult.Success = true;

@@ -1,5 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using model.validata.com.Entities;
 
 namespace data.validata.com.Entities.Configuration
 {

@@ -1,12 +1,16 @@
 ﻿using business.validata.com;
 using business.validata.com.Interfaces;
+using business.validata.com.Interfaces.Adaptors;
 using business.validata.com.Interfaces.Utils;
 using business.validata.com.Interfaces.Validators;
-using data.validata.com.Entities;
 using data.validata.com.Interfaces.Repository;
+using FluentAssertions;
 using Microsoft.Extensions.Logging;
+using model.validata.com.Entities;
 using model.validata.com.Enumeration;
+using model.validata.com.Product;
 using model.validata.com.Validators;
+using model.validata.com.ValueObjects.Product;
 using Moq;
 using System.Linq.Expressions;
 
@@ -14,121 +18,199 @@ namespace business.validata.test
 {
     public class ProductCommandBusinessTests
     {
-        private readonly Mock<IProductValidation> _mockProductValidation=new();
-        private readonly Mock<IUnitOfWork> _mockUnitOfWork=new();
-        private readonly Mock<IGenericValidation<Product>> _mockGenericValidation = new();
-        private readonly Mock<IGenericLambdaExpressions> _mockGenericLambdaExpressions = new();
-        private readonly Mock<ILogger<ProductCommandBusiness>> _mockLogger = new();
-        private readonly ProductCommandBusiness _productCommandBusiness;
+        private readonly Mock<IProductValidation> validationMock = new();
+        private readonly Mock<IUnitOfWork> unitOfWorkMock = new();
+        private readonly Mock<IGenericLambdaExpressions> lambdaMock = new();
+        private readonly Mock<IGenericValidation<Product>> genericValidationMock = new();
+        private readonly Mock<ILogger<ProductCommandBusiness>> loggerMock = new();
+        private readonly Mock<IProductAdaptor> adaptorMock = new();
+        private readonly Mock<ICommandRepository<Product>> productRepoMock = new();
+
+        private readonly ProductCommandBusiness sut;
 
         public ProductCommandBusinessTests()
         {
-           
+            unitOfWorkMock.Setup(u => u.products).Returns(productRepoMock.Object);
 
-           
-           
-
-
-            _productCommandBusiness = new ProductCommandBusiness(
-                _mockProductValidation.Object,
-                _mockUnitOfWork.Object,
-                _mockGenericValidation.Object,
-                _mockGenericLambdaExpressions.Object,
-                _mockLogger.Object
+            sut = new ProductCommandBusiness(
+                validationMock.Object,
+                unitOfWorkMock.Object,
+                genericValidationMock.Object,
+                lambdaMock.Object,
+                loggerMock.Object,
+                adaptorMock.Object
             );
-
-            _mockProductValidation.Setup(v => v.InvokeAsync(It.IsAny<Product>(), It.IsAny<BusinessSetOperation>()))
-                .ReturnsAsync(new ValidationResult<Product> { Entity = new Product { ProductId = 1, Name = "Validated Product", Price = 100f } });
-
-          
-            _mockGenericLambdaExpressions.Setup(gle => gle.GetEntityByPrimaryKey(It.IsAny<Product>()))
-                .Returns<Product>(p => prod => prod.ProductId == p.ProductId);
         }
 
         [Fact]
-        public void Constructor_ThrowsArgumentNullException_IfValidationIsNull()
+        public void Constructor_ThrowsIfValidationIsNull()
         {
-            Assert.Throws<ArgumentNullException>(() => new ProductCommandBusiness(
-                null!, _mockUnitOfWork.Object, _mockGenericValidation.Object, _mockGenericLambdaExpressions.Object, _mockLogger.Object));
+            Assert.Throws<ArgumentNullException>(() =>
+                new ProductCommandBusiness(
+                    null!,
+                    unitOfWorkMock.Object,
+                    genericValidationMock.Object,
+                    lambdaMock.Object,
+                    loggerMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public async Task InvokeAsync_ValidationFails_ReturnsErrors()
+        public void Constructor_ThrowsIfUnitOfWorkIsNull()
         {
-            var err = new ValidationResult<Product>
-            {
-                
-            };
-            err.AddError("Product name is too short");
-            var product = new Product { Name = "Invalid Product" };
-            _mockProductValidation.Setup(v => v.InvokeAsync(product, BusinessSetOperation.Create))
-                .ReturnsAsync(err);
-
-            var result = await _productCommandBusiness.InvokeAsync(product, BusinessSetOperation.Create);
-
-            Assert.False(result.Success);
-            Assert.Contains("Product name is too short", result.Validations);
-            Assert.Null(result.Data);
-            
+            Assert.Throws<ArgumentNullException>(() =>
+                new ProductCommandBusiness(
+                    validationMock.Object,
+                    null!,
+                    genericValidationMock.Object,
+                    lambdaMock.Object,
+                    loggerMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public async Task InvokeAsync_CreateOperation_CallsAddAsyncAndReturnsSuccess()
+        public void Constructor_ThrowsIfGenericLambdaExpressionsIsNull()
         {
-            var productToCreate = new Product { Name = "New Product", Price = 200f };
-            var validatedProduct = new Product { ProductId = 0, Name = "New Product", Price = 200f }; 
-
-            _mockProductValidation.Setup(v => v.InvokeAsync(productToCreate, BusinessSetOperation.Create))
-                .ReturnsAsync(new ValidationResult<Product> { Entity = validatedProduct });
-         
-
-            var result = await _productCommandBusiness.InvokeAsync(productToCreate, BusinessSetOperation.Create);
-
-            Assert.True(result.Success);
-            Assert.Empty(result.Validations);
-            Assert.NotNull(result.Data);
-            Assert.Equal(1, result.Data!.ProductId);
-            Assert.Equal("New Product", result.Data.Name);
-            Assert.Equal(200f, result.Data.Price);
-            
+            Assert.Throws<ArgumentNullException>(() =>
+                new ProductCommandBusiness(
+                    validationMock.Object,
+                    unitOfWorkMock.Object,
+                    genericValidationMock.Object,
+                    null!,
+                    loggerMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public async Task InvokeAsync_UpdateOperation_CallsUpdateAndGetEntityAsyncAndReturnsSuccess()
+        public void Constructor_ThrowsIfGenericValidationIsNull()
         {
-            var productToUpdate = new Product { ProductId = 1, Name = "Updated Product Name", Price = 150f };
-            var validatedExistingProduct = new Product { ProductId = 1, Name = "Original Name", Price = 100f }; 
-
-            _mockProductValidation.Setup(v => v.InvokeAsync(productToUpdate, BusinessSetOperation.Update))
-                .ReturnsAsync(new ValidationResult<Product> { Entity = validatedExistingProduct });
-
-
-            var result = await _productCommandBusiness.InvokeAsync(productToUpdate, BusinessSetOperation.Update);
-
-            Assert.True(result.Success);
-            Assert.Empty(result.Validations);
-            Assert.NotNull(result.Data);
-            Assert.Equal(1, result.Data!.ProductId);
-            Assert.Equal("Updated Product Name", result.Data.Name);
-            Assert.Equal(150f, result.Data.Price);
-            
+            Assert.Throws<ArgumentNullException>(() =>
+                new ProductCommandBusiness(
+                    validationMock.Object,
+                    unitOfWorkMock.Object,
+                    null!,
+                    lambdaMock.Object,
+                    loggerMock.Object,
+                    adaptorMock.Object));
         }
 
         [Fact]
-        public async Task InvokeAsync_HandlesException_ReturnsFailure()
+        public void Constructor_ThrowsIfLoggerIsNull()
         {
-            var product = new Product { ProductId = 1, Name = "Error Product", Price = 10f };
-            var expectedExceptionMessage = "Database connection lost during update";
-
-            _mockProductValidation.Setup(v => v.InvokeAsync(product, BusinessSetOperation.Update))
-                .ReturnsAsync(new ValidationResult<Product> { Entity = new Product { ProductId = 1 } });
-
-
-            var result = await _productCommandBusiness.InvokeAsync(product, BusinessSetOperation.Update);
-
-            Assert.False(result.Success);
-            Assert.Equal(expectedExceptionMessage, result.Exception);
-            Assert.Null(result.Data);
+            Assert.Throws<ArgumentNullException>(() =>
+                new ProductCommandBusiness(
+                    validationMock.Object,
+                    unitOfWorkMock.Object,
+                    genericValidationMock.Object,
+                    lambdaMock.Object,
+                    null!,
+                    adaptorMock.Object));
         }
+
+        [Fact]
+        public void Constructor_ThrowsIfProductAdaptorIsNull()
+        {
+            Assert.Throws<ArgumentNullException>(() =>
+                new ProductCommandBusiness(
+                    validationMock.Object,
+                    unitOfWorkMock.Object,
+                    genericValidationMock.Object,
+                    lambdaMock.Object,
+                    loggerMock.Object,
+                    null!));
+        }
+
+        [Fact]
+        public void Constructor_Succeeds_WhenAllDependenciesAreProvided()
+        {
+            var sut = new ProductCommandBusiness(
+                validationMock.Object,
+                unitOfWorkMock.Object,
+                genericValidationMock.Object,
+                lambdaMock.Object,
+                loggerMock.Object,
+                adaptorMock.Object);
+
+            Assert.NotNull(sut);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_Create_ShouldReturnSuccess_WhenValid()
+        {
+
+            var product = new Product(0, new ProductName("X"), new ProductPrice(9.99m));
+            var validationResult = new ValidationResult<Product>();
+            validationMock.Setup(v => v.InvokeAsync(product, BusinessSetOperation.Create)).ReturnsAsync(validationResult);
+            productRepoMock.Setup(r => r.AddAsync(product)).ReturnsAsync(product);
+            adaptorMock.Setup(a => a.Invoke(product)).Returns(new ProductModel { ProductId = 1 });
+
+
+            var result = await sut.InvokeAsync(product, BusinessSetOperation.Create);
+
+
+            result.Success.Should().BeTrue();
+            result.Data!.ProductId.Should().Be(1);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldReturnValidationErrors_WhenInvalid()
+        {
+
+            var product = new Product(1, new ProductName("Invalid"), new ProductPrice(0));
+            var validationResult = new ValidationResult<Product>();
+            validationResult.AddError("Invalid name");
+
+            validationMock.Setup(v => v.InvokeAsync(product, BusinessSetOperation.Update)).ReturnsAsync(validationResult);
+
+
+            var result = await sut.InvokeAsync(product, BusinessSetOperation.Update);
+
+
+            result.Success.Should().BeFalse();
+            result.Validations.Should().Contain("Invalid name");
+        }
+
+        [Fact]
+        public async Task InvokeAsync_Update_ShouldReturnSuccess_WhenValid()
+        {
+
+            var product = new Product(2, new ProductName("Updated"), new ProductPrice(15));
+            var query = new object();
+            var validationResult = new ValidationResult<Product>();
+            Expression<Func<Product, bool>> expression = x => x.DeletedOn == null;
+            validationMock.Setup(v => v.InvokeAsync(product, BusinessSetOperation.Update)).ReturnsAsync(validationResult);
+            lambdaMock.Setup(l => l.GetEntityByPrimaryKey(product)).Returns(expression);
+            productRepoMock.Setup(r => r.UpdateAsync(expression, It.IsAny<List<Action<Product>>>())).Returns(Task.CompletedTask);
+            productRepoMock.Setup(r => r.GetEntityAsync(expression)).ReturnsAsync(product);
+            adaptorMock.Setup(a => a.Invoke(product)).Returns(new ProductModel { ProductId = 2 });
+
+
+            var result = await sut.InvokeAsync(product, BusinessSetOperation.Update);
+
+
+            result.Success.Should().BeTrue();
+            result.Data!.ProductId.Should().Be(2);
+        }
+
+        [Fact]
+        public async Task InvokeAsync_ShouldCatchException_AndReturnFailure()
+        {
+
+            var product = new Product(3, new ProductName("Boom"), new ProductPrice(99));
+            var validationResult = new ValidationResult<Product>();
+
+            validationMock.Setup(v => v.InvokeAsync(product, BusinessSetOperation.Create)).ReturnsAsync(validationResult);
+            productRepoMock.Setup(r => r.AddAsync(product)).ThrowsAsync(new Exception("Insert fail"));
+
+
+            var result = await sut.InvokeAsync(product, BusinessSetOperation.Create);
+
+
+            result.Success.Should().BeFalse();
+            result.Exception.Should().Be("Insert fail");
+        }
+
+
+
     }
 }

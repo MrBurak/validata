@@ -1,11 +1,12 @@
-using AutoMapper;
 using business.validata.com.Interfaces;
 using model.validata.com.Customer;
-using data.validata.com.Entities;
+using model.validata.com.Entities;
 using Microsoft.AspNetCore.Mvc;
 using model.validata.com;
 using model.validata.com.Enumeration;
 using model.validata.com.Order;
+using business.validata.com.Interfaces.Adaptors;
+using model.validata.com.DTO;
 
 
 namespace api.validata.com.Controllers
@@ -23,8 +24,8 @@ namespace api.validata.com.Controllers
         private readonly ILogger<CustomerController> logger;
         private readonly ICustomerCommandBusiness commandBusiness;
         private readonly ICustomerQueryBusiness queryBusiness;
-        private readonly IMapper mapper;
-        private readonly MapperConfiguration mapperConfiguration;
+        private readonly ICustomerAdaptor adaptor;
+
 
         /// <summary>
         /// Initializes a new instance of the <see cref="CustomerController"/> class.
@@ -32,22 +33,18 @@ namespace api.validata.com.Controllers
         /// <param name="logger">The logger instance.</param>
         /// <param name="commandBusiness">The command business logic for customers.</param>
         /// <param name="queryBusiness">The query business logic for customers.</param>
+        /// <param name="adaptor">The adaptor for converting between models and domain entities.</param>
         /// <exception cref="ArgumentNullException">Thrown when any of the dependencies are null.</exception>
-        public CustomerController(ILogger<CustomerController> logger, ICustomerCommandBusiness commandBusiness, ICustomerQueryBusiness queryBusiness)
+        public CustomerController(ILogger<CustomerController> logger, ICustomerCommandBusiness commandBusiness, ICustomerQueryBusiness queryBusiness, ICustomerAdaptor adaptor)
         {
             ArgumentNullException.ThrowIfNull(logger);
             ArgumentNullException.ThrowIfNull(commandBusiness);
             ArgumentNullException.ThrowIfNull(queryBusiness);
+            ArgumentNullException.ThrowIfNull(adaptor);  
             this.logger = logger;
             this.commandBusiness = commandBusiness;
             this.queryBusiness = queryBusiness;   
-
-            mapperConfiguration= new MapperConfiguration(mapperConfigurationExpression =>
-            {
-                mapperConfigurationExpression.CreateMap<CustomerInsertModel, Customer>();
-                mapperConfigurationExpression.CreateMap<CustomerUpdateModel, Customer>();
-            });
-            mapper = mapperConfiguration.CreateMapper();
+            this.adaptor = adaptor;
         }
 
         /// <summary>
@@ -55,9 +52,11 @@ namespace api.validata.com.Controllers
         /// </summary>
         /// <param name="pageNumber">The page number (starting from 1).</param>
         /// <param name="pageSize">The number of customers per page.</param>
-        /// <returns>A <see cref="QueryResult{T}"/> containing a list of <see cref="CustomerViewModel"/> instances.</returns>
+        /// <returns>
+        /// A <see cref="QueryResult{T}"/> containing a list of <see cref="CustomerDto"/> instances.
+        /// </returns>
         [HttpGet("list/{pageNumber}/{pageSize}")]
-        public async Task<QueryResult<IEnumerable<CustomerViewModel>>> List(int pageNumber, int pageSize)
+        public async Task<QueryResult<IEnumerable<CustomerDto>>> List(int pageNumber, int pageSize)
         {
             logger.LogInformation("Fetching customers. PageNumber: {PageNumber}, PageSize: {PageSize}", pageNumber, pageSize);
 
@@ -72,12 +71,14 @@ namespace api.validata.com.Controllers
         /// Inserts a new customer.
         /// </summary>
         /// <param name="request">The customer insert model containing the new customer's data.</param>
-        /// <returns>The result of the create operation including the inserted customer view model.</returns>
+        /// <returns>
+        /// A <see cref="CommandResult{T}"/> containing the inserted <see cref="CustomerDto"/>.
+        /// </returns>
         [HttpPost("insert")]
-        public async Task<CommandResult<CustomerViewModel>> Insert(CustomerInsertModel request)
+        public async Task<CommandResult<CustomerDto>> Insert(CustomerInsertModel request)
         {
             logger.LogInformation("Inserting a new customer: {Email}", request.Email);
-            var customer = mapper.Map<Customer>(request);
+            var customer =  adaptor.Invoke(request);
             var result = await commandBusiness.InvokeAsync(customer, BusinessSetOperation.Create);
             logger.LogInformation("Customer inserted. Success: {Success}", result.Success);
             return result;
@@ -87,12 +88,14 @@ namespace api.validata.com.Controllers
         /// Updates an existing customer.
         /// </summary>
         /// <param name="request">The customer update model containing the updated data.</param>
-        /// <returns>The result of the update operation including the updated customer view model.</returns>
+        /// <returns>
+        /// A <see cref="CommandResult{T}"/> containing the updated <see cref="CustomerDto"/>.
+        /// </returns>
         [HttpPut("update")]
-        public async Task<CommandResult<CustomerViewModel>> Update(CustomerUpdateModel request)
+        public async Task<CommandResult<CustomerDto>> Update(CustomerUpdateModel request)
         {
             logger.LogInformation("Updating customer ID: {CustomerId}", request.CustomerId);
-            var customer = mapper.Map<Customer>(request);
+            var customer = adaptor.Invoke(request);
             var result = await commandBusiness.InvokeAsync(customer, BusinessSetOperation.Update);
             logger.LogInformation("Customer update completed. Success: {Success}", result.Success);
             return result;
@@ -102,7 +105,10 @@ namespace api.validata.com.Controllers
         /// Deletes a customer by ID.
         /// </summary>
         /// <param name="customerId">The ID of the customer to delete.</param>
-        /// <returns>The result of the delete operation including the deleted customer entity.</returns>
+        /// <returns>
+        /// A <see cref="CommandResult{T}"/> containing the deleted <see cref="Customer"/> entity.
+        /// </returns>
+
         [HttpDelete("delete")]
         public async Task<CommandResult<Customer>> Delete(int customerId)
         {
@@ -116,9 +122,11 @@ namespace api.validata.com.Controllers
         /// Retrieves a specific customer by ID.
         /// </summary>
         /// <param name="customerId">The ID of the customer to retrieve.</param>
-        /// <returns>The query result containing the customer view model if found.</returns>
+        /// <returns>
+        /// A <see cref="QueryResult{T}"/> containing the <see cref="CustomerDto"/> if found; otherwise, null.
+        /// </returns>
         [HttpGet("get/{customerId}")]
-        public async Task<QueryResult<CustomerViewModel?>> Get(int customerId)
+        public async Task<QueryResult<CustomerDto?>> Get(int customerId)
         {
             logger.LogInformation("Fetching customer by ID: {CustomerId}", customerId);
             var result = await queryBusiness.GetAsync(customerId);
@@ -132,7 +140,9 @@ namespace api.validata.com.Controllers
         /// <param name="customerId">The ID of the customer whose orders are to be retrieved.</param>
         /// <param name="pageNumber">The current page number.</param>
         /// <param name="pageSize">The number of records per page.</param>
-        /// <returns>A query result containing a list of order view models.</returns>
+        /// <returns>
+        /// A <see cref="QueryResult{T}"/> containing a list of <see cref="OrderViewModel"/> instances.
+        /// </returns>
         [HttpGet("getorders/{customerId}/{pageNumber}/{pageSize}")]
         public async Task<QueryResult<IEnumerable<OrderViewModel>>> ListOrders(int customerId, int pageNumber, int pageSize)
         {
